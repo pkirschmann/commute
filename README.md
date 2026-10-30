@@ -18,6 +18,7 @@ A phone page that answers "when should I leave, and which bus?" for trips betwee
 | File | What it does |
 |---|---|
 | `index.html` | The page you open on your phone. |
+| `apple-touch-icon.png` | The Madison flag icon for your home screen and older browsers. The browser-tab icon is built into `index.html`. |
 | `schedule.json` | Your buses' timetable. Created by the GitHub Action below; you don't edit it. |
 | `build_schedule.py` | Builds `schedule.json` from Metro's published schedule. |
 | `.github/workflows/schedule.yml` | Runs the builder every Monday, or whenever you click "Run workflow". |
@@ -66,6 +67,8 @@ const DEFAULT_RELAY = "https://commute-relay.yourname.workers.dev";
 ```
 
 Commit. (You can also paste the address in the page's Settings instead, but that only saves it on one device.)
+
+This copy already has `https://commute-relay.pkir.workers.dev` filled in.
 
 ### 6. Put it on your phone
 
