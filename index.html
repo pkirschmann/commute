@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E8EEF1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1924" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Commute">
+<title>Bus Commute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E8EEF1; --surface: #F7FAFB; --ink: #16263A; --muted: #56677A; --rule: #C6D2DA;
+  --walk: #8394A4; --idle: #C6D2DA; --focus: #1E6FD9; --warn-bg: #FFF3D6; --warn-ink: #5C4300;
+  --A: #EE3325; --B: #80BC00; --D: #333366; --A-ink: #fff; --B-ink: #10220A; --D-ink: #fff;
+  --font: "Barlow", system-ui, sans-serif; --num: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1924; --surface: #152433; --ink: #E4ECF2; --muted: #98A8B6; --rule: #2B3D4F;
+    --walk: #7A8C9C; --idle: #2B3D4F; --focus: #7FB2FF; --warn-bg: #3A2F12; --warn-ink: #F5DFA6;
+    --D: #6A6ABF;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.45 var(--font);
+  padding: env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom));
+}
+main { max-width: 560px; margin: 0 auto; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+
+/* Top bar */
+.top { display: flex; align-items: center; gap: 8px; padding: 14px 0 10px; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 3px; }
+.seg button {
+  border: 0; background: none; padding: 7px 14px; border-radius: 999px; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg.small button { font-size: 14px; padding: 5px 12px; font-weight: 500; }
+.icon-btn {
+  margin-left: auto; border: 1px solid var(--rule); background: var(--surface); width: 40px; height: 40px;
+  border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+}
+.sub { display: flex; align-items: center; gap: 10px; margin: 2px 0 14px; color: var(--muted); font-size: 14px; }
+
+/* Status */
+.status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--walk); flex: none; }
+.status.live .dot { background: #2E9E5B; }
+.status.off .dot { background: #C98A00; }
+
+/* Hero */
+.hero { padding: 6px 0 18px; }
+.hero h1 {
+  font: 600 clamp(44px, 14vw, 72px)/0.95 var(--num); letter-spacing: -0.01em; margin: 0 0 10px;
+}
+.hero p { margin: 0; font-size: 18px; line-height: 1.35; max-width: 34ch; }
+.hero .muted { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.badge {
+  display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 7px;
+  font: 700 17px/1 var(--num); vertical-align: -5px; margin-right: 2px;
+}
+.badge.A { background: var(--A); color: var(--A-ink); }
+.badge.B { background: var(--B); color: var(--B-ink); }
+.badge.D { background: var(--D); color: var(--D-ink); }
+.badge.sm { min-width: 22px; height: 22px; font-size: 14px; border-radius: 6px; vertical-align: -4px; }
+
+/* Alerts */
+.alert { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; margin: 0 0 14px; font-size: 14px; }
+.alert summary { cursor: pointer; font-weight: 600; }
+.alert p { margin: 8px 0 0; }
+
+/* Timeline */
+.board { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 12px 14px 4px; }
+.axis { position: relative; height: 18px; margin: 0 0 4px; font: 500 12px/1 var(--num); color: var(--muted); }
+.axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.axis span:first-child { transform: none; }
+.opt { border-top: 1px solid var(--rule); padding: 12px 0; }
+.opt:first-of-type { border-top: 0; }
+.opt-head {
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 8px; width: 100%;
+  background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+}
+.opt-name { font-weight: 600; font-size: 16px; }
+.opt-sub { color: var(--muted); font-size: 13px; display: block; font-weight: 400; }
+.opt-when { font: 600 20px/1.1 var(--num); text-align: right; white-space: nowrap; }
+.opt-when small { display: block; font: 500 12px/1.2 var(--font); color: var(--muted); }
+.opt.best .opt-name::after { content: "Best"; font: 600 11px/1 var(--font); background: var(--ink); color: var(--bg); padding: 3px 6px; border-radius: 4px; margin-left: 8px; vertical-align: 2px; }
+.bar { position: relative; height: 14px; margin: 10px 0 2px; border-radius: 4px; background: repeating-linear-gradient(90deg, var(--idle) 0 2px, transparent 2px 8px) center / 100% 2px no-repeat; }
+.bar i { position: absolute; top: 0; height: 100%; border-radius: 3px; }
+.bar i.walk { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
+.bar i.wait { height: 6px; top: 4px; opacity: 0.45; }
+.bar i.A { background-color: var(--A); } .bar i.B { background-color: var(--B); } .bar i.D { background-color: var(--D); }
+.bar i.missing { background: none; border: 1px dashed var(--muted); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 10px 0 8px; border-top: 1px solid var(--rule); }
+.legend b { display: inline-block; width: 18px; height: 8px; border-radius: 2px; vertical-align: 0; margin-right: 5px; }
+.legend .lw { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
+.legend .lr { background: var(--ink); }
+.legend .lq { background: var(--ink); opacity: 0.45; height: 4px; vertical-align: 2px; }
+
+.deps { list-style: none; margin: 10px 0 0; padding: 0; font-size: 14px; }
+.deps li { display: grid; grid-template-columns: 4.4em 1fr auto; gap: 8px; padding: 6px 0; border-top: 1px dashed var(--rule); align-items: baseline; }
+.deps li.hd { border-top: 0; padding: 0; font-size: 12px; color: var(--muted); }
+.deps .t { font: 600 16px/1 var(--num); }
+.deps .note { color: var(--muted); }
+.deps .cx { text-decoration: line-through; color: var(--muted); }
+.tag { font: 600 11px/1 var(--font); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; }
+.tag.live { border-color: #2E9E5B; color: #2E9E5B; }
+.tag.late { border-color: #C0392B; color: #C0392B; }
+.empty { color: var(--muted); font-size: 14px; padding: 4px 0 0; }
+
+footer { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.5; }
+footer p { margin: 0 0 6px; }
+
+/* Settings sheet */
+dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100vw - 24px)); max-height: 86vh; background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
+.sheet { padding: 18px 18px 8px; }
+.sheet h2 { margin: 0 0 4px; font: 600 22px/1.2 var(--num); }
+.sheet h3 { margin: 18px 0 6px; font-size: 15px; }
+.sheet p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+.field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+.field input[type=number] { width: 4.2em; }
+.field input { font: 500 16px var(--font); padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.field.wide { grid-template-columns: 1fr; }
+.field.wide input { width: 100%; }
+.sheet-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 18px 16px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--rule); }
+.btn { border: 1px solid var(--rule); background: var(--bg); padding: 9px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: left .4s ease, width .4s ease; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="seg" role="group" aria-label="Direction">
+      <button type="button" data-mode="work">To work</button>
+      <button type="button" data-mode="home">Home</button>
+    </div>
+    <button class="icon-btn" type="button" id="open-settings" aria-label="Settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="sub" id="from-row" hidden>
+    <span>Starting from</span>
+    <div class="seg small" role="group" aria-label="Starting point">
+      <button type="button" data-from="home">Home</button>
+      <button type="button" data-from="daycare">Daycare</button>
+    </div>
+  </div>
+
+  <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading schedule</span></div>
+  <section class="hero" id="hero" aria-live="polite"></section>
+  <div id="alerts"></div>
+  <section class="board" id="board" aria-label="Your options"></section>
+
+  <footer>
+    <p id="feed-note"></p>
+    <p>Data provided under license granted by City of Madison, WI, Metro Transit.</p>
+  </footer>
+</main>
+
+<dialog id="settings" aria-labelledby="settings-title">
+  <form method="dialog" id="settings-form">
+    <div class="sheet">
+      <h2 id="settings-title">Settings</h2>
+      <p>Saved on this phone only.</p>
+      <div class="field wide"><label for="relay">Live data link (your Cloudflare relay)</label><input id="relay" type="url" inputmode="url" placeholder="https://commute-relay.yourname.workers.dev" autocomplete="off"></div>
+      <div class="field"><label for="buffer">Minutes to be at the stop before the bus</label><input id="buffer" type="number" min="0" max="15" step="1"></div>
+      <div class="field"><label for="xfer">Minutes needed to change buses</label><input id="xfer" type="number" min="0" max="15" step="1"></div>
+      <h3>Walking minutes</h3>
+      <p>First number: walk to the stop. Second: walk from where you get off.</p>
+      <div id="walk-fields"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="reset-settings">Reset</button>
+      <button class="btn primary" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+// ---------- Your setup ----------
+const DEFAULT_RELAY = ""; // paste your Cloudflare Worker link here, e.g. "https://commute-relay.yourname.workers.dev"
+const POLL_SECONDS = 30;  // Metro refreshes its feed about every 30 seconds
+const HORIZON_MIN = 90;   // how far ahead to look
+
+// Each option: route, direction, board stop, alight stop (GTFS stop_id), default walk minutes.
+const PLANS = {
+  work: {
+    home: [
+      { id: "b-commercial", route: "B", dir: "B0", from: "218", to: "2844", stop: "Commercial & North", name: "B at Commercial & North", sub: "Get off at East Campus, by the Chazen", walkTo: 4, walkFrom: 7 },
+      { id: "d-johnson", route: "D", dir: "D0", from: "581", to: "2810", stop: "Johnson & North", name: "D at Johnson & North", sub: "Get off at University & Mills", walkTo: 9, walkFrom: 2 },
+    ],
+    daycare: [
+      { id: "a-fourth", route: "A", dir: "A0", from: "2857", to: "2864", stop: "Fourth Street", name: "A at Fourth Street", sub: "Get off at Orchard", walkTo: 3, walkFrom: 2 },
+      { id: "b-fourth", route: "B", dir: "B0", from: "2857", to: "2844", stop: "Fourth Street", name: "B at Fourth Street", sub: "Get off at East Campus, by the Chazen", walkTo: 3, walkFrom: 7 },
+    ],
+  },
+  home: [
+    { id: "b-park", route: "B", dir: "B1", from: "1301", to: "211", stop: "Park & Dayton", name: "B at Park & Dayton", sub: "Get off at Commercial & North", walkTo: 9, walkFrom: 4 },
+    { id: "d-orchard", route: "D", dir: "D1", from: "2896", to: "239", stop: "Johnson & Orchard", name: "D at Johnson & Orchard", sub: "Get off at North & Johnson", walkTo: 4, walkFrom: 9 },
+    { id: "a-then-b", route: "A", dir: "A1", from: "2865", to: "2858", stop: "Orchard", name: "A at Orchard, then B", sub: "Change to the B at Fourth Street", walkTo: 3, walkFrom: 4,
+      transfer: { route: "B", dir: "B1", from: "2858", to: "211" } },
+  ],
+};
+const ALL_OPTIONS = [...PLANS.work.home, ...PLANS.work.daycare, ...PLANS.home];
+const OUR_ROUTES = new Set(["A", "B", "D"]);
+
+// ---------- GTFS-Realtime decoder (no libraries) ----------
+const GTFSRT = (() => {
+  const td = new TextDecoder();
+  function parse(buf) {
+    const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    const f = {}; let p = 0;
+    const varint = () => {
+      let lo = 0, mul = 1, b, n = 0, big = null;
+      do {
+        b = u8[p++];
+        if (n < 7) { lo += (b & 0x7f) * mul; mul *= 128; }
+        else { big = big ?? BigInt(lo); big += BigInt(b & 0x7f) << BigInt(7 * n); }
+        n++;
+      } while (b & 0x80);
+      return big !== null ? Number(BigInt.asIntN(64, big)) : lo;
+    };
+    while (p < u8.length) {
+      const key = varint(), no = Math.floor(key / 8), wt = key & 7; let v;
+      if (wt === 0) v = varint();
+      else if (wt === 1) { v = dv.getFloat64(p, true); p += 8; }
+      else if (wt === 2) { const len = varint(); v = u8.subarray(p, p + len); p += len; }
+      else if (wt === 5) { v = dv.getFloat32(p, true); p += 4; }
+      else throw new Error("Unsupported wire type " + wt);
+      (f[no] ||= []).push(v);
+    }
+    return f;
+  }
+  const one = (f, n) => (f[n] ? f[n][0] : undefined);
+  const str = (f, n) => (f[n] ? td.decode(f[n][0]) : undefined);
+  const msg = (f, n) => (f[n] ? parse(f[n][0]) : null);
+  const int32 = v => (v === undefined ? undefined : (v > 2147483647 ? v - 4294967296 : v));
+  const trip = f => f ? { tripId: str(f, 1), startDate: str(f, 3), rel: one(f, 4) || 0, routeId: str(f, 5) } : null;
+  const event = f => f ? { delay: int32(one(f, 1)), time: one(f, 2) } : null;
+  const translated = f => {
+    if (!f || !f[1]) return "";
+    const t = f[1].map(parse);
+    const en = t.find(x => (str(x, 2) || "en").startsWith("en")) || t[0];
+    return str(en, 1) || "";
+  };
+  function decode(buf) {
+    const root = parse(buf), h = msg(root, 1) || {};
+    const out = { timestamp: one(h, 3), tripUpdates: [], alerts: [] };
+    for (const eb of root[2] || []) {
+      const e = parse(eb);
+      if (e[3]) {
+        const tu = parse(e[3][0]);
+        out.tripUpdates.push({
+          trip: trip(msg(tu, 1)), delay: int32(one(tu, 5)),
+          stops: (tu[2] || []).map(b => { const s = parse(b);
+            return { stopId: str(s, 4), arrival: event(msg(s, 2)), departure: event(msg(s, 3)), rel: one(s, 5) || 0 }; }),
+        });
+      }
+      if (e[5]) {
+        const a = parse(e[5][0]);
+        out.alerts.push({
+          id: str(e, 1),
+          periods: (a[1] || []).map(b => { const t = parse(b); return [one(t, 1), one(t, 2)]; }),
+          routes: (a[5] || []).map(b => str(parse(b), 2)).filter(Boolean),
+          stops: (a[5] || []).map(b => str(parse(b), 5)).filter(Boolean),
+          header: translated(msg(a, 10)), description: translated(msg(a, 11)),
+        });
+      }
+    }
+    return out;
+  }
+  return { decode };
+})();
+
+// ---------- Storage (this phone only) ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("commute." + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("commute." + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem("commute." + k); } catch {} },
+};
+function settings() {
+  const s = store.get("settings", {});
+  return {
+    relay: (s.relay ?? DEFAULT_RELAY).replace(/\/+$/, ""),
+    buffer: Number.isFinite(s.buffer) ? s.buffer : 1,
+    xfer: Number.isFinite(s.xfer) ? s.xfer : 1,
+    walk: s.walk || {},
+  };
+}
+const walkOf = (opt, which) => { const w = settings().walk[opt.id]; return w && Number.isFinite(w[which]) ? w[which] : opt[which]; };
+
+// ---------- State ----------
+let SCHED = null, schedError = null, live = null, liveError = null, lastFetchOk = 0;
+const today = () => {
+  const d = new Date();
+  return {
+    ymd: `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`,
+    weekday: (d.getDay() + 6) % 7, // Monday = 0
+    midnight: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000,
+  };
+};
+let mode = store.get("mode-" + today().ymd, null) || (new Date().getHours() < 12 ? "work" : "home");
+let from = store.get("from-" + today().ymd, "home");
+const expanded = new Set();
+
+function activeServices(t) {
+  const on = new Set();
+  for (const [sid, days, start, end] of SCHED.calendar) if (days[t.weekday] === "1" && start <= t.ymd && t.ymd <= end) on.add(sid);
+  for (const [sid, date, type] of SCHED.dates) if (date === t.ymd) { if (type === "1") on.add(sid); else on.delete(sid); }
+  return on;
+}
+
+// ---------- Trip planning ----------
+const evTime = s => s && ((s.departure && s.departure.time) || (s.arrival && s.arrival.time));
+function legTrips(leg, t, active, now) {
+  const stops = SCHED.stopsByDir[leg.dir], iF = stops.indexOf(leg.from) + 2, iT = stops.indexOf(leg.to) + 2;
+  const out = [];
+  for (const r of SCHED.trips[leg.dir] || []) {
+    if (!active.has(r[1]) || r[iF] == null || r[iT] == null) continue;
+    const sDep = t.midnight + r[iF], sArr = t.midnight + r[iT];
+    if (sArr < now - 3600 || sDep > now + (HORIZON_MIN + 60) * 60) continue;
+    let dep = sDep, arr = sArr, status = "scheduled", delay = 0;
+    const tu = live && live.byTrip.get(r[0]);
+    if (tu) {
+      if (tu.trip.rel === 3) status = "canceled";
+      else {
+        const m = new Map(tu.stops.map(s => [s.stopId, s]));
+        const b = m.get(leg.from), a = m.get(leg.to);
+        if (b && b.rel === 1) status = "canceled"; // skipped stop
+        const bt = evTime(b), at = evTime(a);
+        if (bt) { dep = bt; arr = at || sArr + (bt - sDep); status = status === "canceled" ? status : "live"; }
+        else if (tu.stops.length && at) continue; // bus has already passed your stop
+        else if (tu.stops.length && !at && sArr < now) continue;
+        else if (Number.isFinite(tu.delay)) { dep += tu.delay; arr += tu.delay; status = "estimated"; }
+        delay = dep - sDep;
+      }
+    }
+    out.push({ tripId: r[0], route: leg.route, sDep, dep, arr, status, delay });
+  }
+  return out.sort((x, y) => x.dep - y.dep);
+}
+
+function journeys(opt, t, active, now, s) {
+  const walkTo = walkOf(opt, "walkTo") * 60, walkFrom = walkOf(opt, "walkFrom") * 60, buf = s.buffer * 60;
+  const first = legTrips(opt, t, active, now);
+  const second = opt.transfer ? legTrips(opt.transfer, t, active, now).filter(x => x.status !== "canceled") : null;
+  const res = [];
+  for (const j of first) {
+    const leaveBy = j.dep - walkTo - buf;
+    if (leaveBy < now - 30) continue;
+    if (leaveBy > now + HORIZON_MIN * 60) break;
+    const out = { opt, leaveBy, legs: [j], arrive: j.arr + walkFrom, canceled: j.status === "canceled", missingTransfer: false };
+    if (second && !out.canceled) {
+      const next = second.find(x => x.dep >= j.arr + s.xfer * 60);
+      if (next) { out.legs.push(next); out.arrive = next.arr + walkFrom; }
+      else { out.missingTransfer = true; out.arrive = Infinity; }
+    }
+    res.push(out);
+  }
+  return res;
+}
+
+// ---------- Rendering ----------
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const clock = sec => new Date(sec * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M$/i, m => m.trim().toLowerCase() === "am" ? "a" : "p");
+const mins = sec => Math.max(0, Math.round(sec / 60));
+const badge = (r, sm) => `<span class="badge ${r}${sm ? " sm" : ""}" aria-label="Route ${r}">${r}</span>`;
+
+function currentOptions() { return mode === "work" ? PLANS.work[from] : PLANS.home; }
+
+function render() {
+  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+  document.querySelectorAll("[data-from]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.from === from)));
+  $("#from-row").hidden = mode !== "work";
+  renderStatus();
+  if (!SCHED) return;
+
+  const t = today(), now = Date.now() / 1000, s = settings(), active = activeServices(t);
+  const rows = currentOptions().map(opt => ({ opt, list: journeys(opt, t, active, now, s) }));
+  const catchable = rows.map(r => r.list.find(j => !j.canceled && !j.missingTransfer)).filter(Boolean);
+  const best = catchable.slice().sort((a, b) => a.arrive - b.arrive || b.leaveBy - a.leaveBy)[0];
+
+  // Hero
+  const dest = mode === "work" ? "at work" : "home";
+  if (best) {
+    const lead = best.leaveBy - now;
+    const head = lead < 45 ? "Leave now" : `Leave in ${mins(lead)} min`;
+    const j = best.legs[0];
+    const via = best.legs[1] ? `, then ${badge("B", true)} at Fourth Street` : "";
+    $("#hero").innerHTML = `<h1>${head}</h1>
+      <p>${badge(j.route)} from ${esc(best.opt.stop)} at ${clock(j.dep)}${via}. You'll be ${dest} around ${clock(best.arrive)}.</p>
+      <p class="muted">${j.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}</p>`;
+  } else {
+    $("#hero").innerHTML = `<h1>No bus soon</h1><p>None of your options leave in the next ${HORIZON_MIN} minutes.</p>
+      <p class="muted">This page covers trips to work from 6 to 11:30 am and trips home from 2 to 10:30 pm.</p>`;
+  }
+
+  // Timeline scale
+  const ends = rows.map(r => r.list.find(j => !j.canceled && isFinite(j.arrive))?.arrive).filter(Boolean);
+  const spanMin = Math.min(120, Math.max(40, Math.ceil(((Math.max(now + 1800, ...ends) - now) / 60 + 5) / 10) * 10));
+  const pct = sec => Math.max(0, Math.min(100, ((sec - now) / (spanMin * 60)) * 100));
+  const ticks = []; for (let m = 0; m <= spanMin; m += spanMin > 60 ? 20 : 10) ticks.push(m);
+  const axis = `<div class="axis" aria-hidden="true">${ticks.map((m, i) => `<span style="left:${(m / spanMin) * 100}%">${i === 0 ? "now" : clock(now + m * 60)}</span>`).join("")}</div>`;
+
+  const optHtml = rows.map(({ opt, list }) => {
+    const next = list.find(j => !j.canceled && !j.missingTransfer);
+    const isBest = best && next === best;
+    const open = expanded.has(opt.id);
+    let bar = "", when = `<span class="opt-when">None<small>next ${HORIZON_MIN} min</small></span>`;
+    if (next) {
+      const wt = walkOf(opt, "walkTo") * 60, wf = walkOf(opt, "walkFrom") * 60;
+      const a = next.legs[0], b = next.legs[1];
+      const seg = (cls, s0, s1) => s1 > s0 ? `<i class="${cls}" style="left:${pct(s0)}%;width:${Math.max(0.6, pct(s1) - pct(s0))}%"></i>` : "";
+      bar = `<div class="bar" aria-hidden="true">
+        ${seg("walk", next.leaveBy, a.dep - s.buffer * 60)}
+        ${seg("wait " + a.route, a.dep - s.buffer * 60, a.dep)}
+        ${seg(a.route, a.dep, a.arr)}
+        ${b ? seg("wait " + b.route, a.arr, b.dep) + seg(b.route, b.dep, b.arr) : ""}
+        ${seg("walk", (b || a).arr, next.arrive)}
+      </div>`;
+      const lead = next.leaveBy - now;
+      when = `<span class="opt-when">${lead < 45 ? "Now" : mins(lead) + " min"}<small>${dest === "home" ? "home" : "work"} ${clock(next.arrive)}</small></span>`;
+    }
+    const deps = list.slice(0, 4).map(j => {
+      const a = j.legs[0];
+      const tag = a.status === "canceled" ? `<span class="tag late">Canceled</span>`
+        : a.status === "live" ? `<span class="tag ${a.delay > 120 ? "late" : "live"}">${a.delay > 90 ? mins(a.delay) + " min late" : a.delay < -90 ? mins(-a.delay) + " min early" : "Live, on time"}</span>`
+        : a.status === "estimated" ? `<span class="tag">Estimated</span>` : `<span class="tag">Timetable</span>`;
+      const note = j.canceled ? `<span class="cx">Bus at ${clock(a.sDep)}</span>`
+        : j.missingTransfer ? `Bus ${clock(a.dep)}, no B connection found`
+        : `Bus ${clock(a.dep)}${j.legs[1] ? `, B ${clock(j.legs[1].dep)}` : ""}, ${mode === "work" ? "work" : "home"} ${clock(j.arrive)}`;
+      return `<li><span class="t">${j.canceled ? "–" : clock(j.leaveBy)}</span><span class="note">${note}</span>${tag}</li>`;
+    }).join("");
+    return `<div class="opt${isBest ? " best" : ""}">
+      <button class="opt-head" type="button" aria-expanded="${open}" data-opt="${opt.id}">
+        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span><span class="opt-sub">${esc(opt.sub)}, ${walkOf(opt, "walkTo")} min walk to the stop</span></span>
+        ${when}
+      </button>
+      ${bar}
+      ${open ? (deps ? `<ul class="deps"><li class="hd"><span>Leave by</span><span></span><span></span></li>${deps}</ul>` : `<p class="empty">No buses in the next ${HORIZON_MIN} minutes.</p>`) : ""}
+    </div>`;
+  }).join("");
+
+  $("#board").innerHTML = axis + optHtml + `<div class="legend" aria-hidden="true"><span><b class="lw"></b>Walk</span><span><b class="lq"></b>Wait at stop</span><span><b class="lr"></b>On the bus</span><span>Tap an option for more times</span></div>`;
+
+  // Alerts for our routes or stops
+  const ourStops = new Set(currentOptions().flatMap(o => [o.from, o.to, ...(o.transfer ? [o.transfer.from, o.transfer.to] : [])]));
+  const routes = new Set(currentOptions().flatMap(o => [o.route, ...(o.transfer ? [o.transfer.route] : [])]));
+  const alerts = (live?.alerts || []).filter(a =>
+    (a.routes.some(r => routes.has(r)) || a.stops.some(x => ourStops.has(x))) &&
+    (!a.periods.length || a.periods.some(([st, en]) => (!st || st <= now) && (!en || en >= now))));
+  $("#alerts").innerHTML = alerts.map(a => `<details class="alert"><summary>${esc(a.header || "Service alert")}</summary>${a.description ? `<p>${esc(a.description)}</p>` : ""}</details>`).join("");
+
+  // Footer: schedule validity
+  const end = SCHED.feedEnd;
+  const endTxt = end ? `${end.slice(4, 6)}/${end.slice(6)}/${end.slice(0, 4)}` : "unknown";
+  $("#feed-note").textContent = t.ymd > end
+    ? `The timetable expired on ${endTxt}. Run the "Update bus schedule" action on GitHub to load the new one.`
+    : `Timetable valid through ${endTxt}.`;
+}
+
+function renderStatus() {
+  const el = $("#status"), txt = $("#status-text"), s = settings();
+  el.classList.remove("live", "off");
+  if (!SCHED) { txt.textContent = schedError ? "Couldn't load the timetable. Check that schedule.json is in the repo." : "Loading timetable"; return; }
+  if (!s.relay) { el.classList.add("off"); txt.textContent = "Timetable only. Add your live data link in Settings."; return; }
+  if (live && Date.now() - lastFetchOk < 3 * 60 * 1000) {
+    const age = Math.max(0, Math.round(Date.now() / 1000 - live.timestamp));
+    el.classList.add("live");
+    txt.textContent = age < 60 ? "Live, Metro updated under a minute ago" : `Live, Metro updated ${Math.round(age / 60)} min ago`;
+  } else if (liveError) {
+    el.classList.add("off"); txt.textContent = "Can't reach live data right now. Showing the timetable.";
+  } else txt.textContent = "Getting live data";
+}
+
+// ---------- Data loading ----------
+async function loadSchedule() {
+  try {
+    if (window.SCHEDULE_DATA) { SCHED = window.SCHEDULE_DATA; return; }
+    const r = await fetch("schedule.json", { cache: "no-cache" });
+    if (!r.ok) throw new Error(r.status);
+    SCHED = await r.json();
+  } catch (e) { schedError = e; }
+}
+let inflight = false;
+async function loadLive() {
+  const relay = settings().relay;
+  if (!relay || inflight || document.hidden) return;
+  inflight = true;
+  try {
+    const [tr, al] = await Promise.all(["trips", "alerts"].map(p => fetch(`${relay}/${p}`, { cache: "no-store" })));
+    if (!tr.ok) throw new Error("trips " + tr.status);
+    const t = GTFSRT.decode(await tr.arrayBuffer());
+    const a = al.ok ? GTFSRT.decode(await al.arrayBuffer()) : { alerts: [] };
+    const byTrip = new Map();
+    for (const u of t.tripUpdates) if (u.trip && OUR_ROUTES.has(u.trip.routeId)) byTrip.set(u.trip.tripId, u);
+    live = { timestamp: t.timestamp, byTrip, alerts: a.alerts };
+    lastFetchOk = Date.now(); liveError = null;
+  } catch (e) { liveError = e; }
+  finally { inflight = false; render(); }
+}
+
+// ---------- Events ----------
+document.addEventListener("click", e => {
+  const m = e.target.closest("[data-mode]");
+  if (m) { mode = m.dataset.mode; store.set("mode-" + today().ymd, mode); render(); return; }
+  const f = e.target.closest("[data-from]");
+  if (f) { from = f.dataset.from; store.set("from-" + today().ymd, from); render(); return; }
+  const o = e.target.closest("[data-opt]");
+  if (o) { const id = o.dataset.opt; expanded.has(id) ? expanded.delete(id) : expanded.add(id); render(); }
+});
+
+const dlg = $("#settings");
+function fillSettings() {
+  const s = settings();
+  $("#relay").value = s.relay; $("#buffer").value = s.buffer; $("#xfer").value = s.xfer;
+  $("#walk-fields").innerHTML = ALL_OPTIONS.map(o => `<div class="field"><span>${badge(o.route, true)} ${esc(o.name)}</span>
+    <span><input type="number" min="0" max="40" aria-label="${esc(o.name)}: minutes walking to the stop" data-walk="${o.id}" data-which="walkTo" value="${walkOf(o, "walkTo")}">
+    <input type="number" min="0" max="40" aria-label="${esc(o.name)}: minutes walking after getting off" data-walk="${o.id}" data-which="walkFrom" value="${walkOf(o, "walkFrom")}"></span></div>`).join("");
+}
+$("#open-settings").addEventListener("click", () => { fillSettings(); dlg.showModal(); });
+$("#reset-settings").addEventListener("click", () => { store.del("settings"); fillSettings(); });
+dlg.addEventListener("close", () => {
+  if (dlg.returnValue !== "save") return;
+  const walk = {};
+  document.querySelectorAll("[data-walk]").forEach(i => { (walk[i.dataset.walk] ||= {})[i.dataset.which] = Number(i.value); });
+  const num = (v, d) => (v === "" || !Number.isFinite(Number(v)) ? d : Number(v));
+  store.set("settings", { relay: $("#relay").value.trim(), buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walk });
+  live = null; liveError = null; render(); loadLive();
+});
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { render(); loadLive(); } });
+setInterval(render, 15000);
+setInterval(loadLive, POLL_SECONDS * 1000);
+
+(async () => { render(); await loadSchedule(); render(); loadLive(); })();
+</script>
+</body>
+</html>
