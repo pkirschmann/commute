@@ -189,7 +189,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 
 <script>
 // ---------- Your setup ----------
-const DEFAULT_RELAY = "https://commute-relay.pkir.workers.dev"; // paste your Cloudflare Worker link here, e.g. "https://commute-relay.yourname.workers.dev"
+const DEFAULT_RELAY = ""; // paste your Cloudflare Worker link here, e.g. "https://commute-relay.yourname.workers.dev"
 const POLL_SECONDS = 30;  // Metro refreshes its feed about every 30 seconds
 const HORIZON_MIN = 90;   // how far ahead to look
 
@@ -303,14 +303,18 @@ const walkOf = (opt, which) => { const w = settings().walk[opt.id]; return w && 
 
 // ---------- State ----------
 let SCHED = null, schedError = null, live = null, liveError = null, lastFetchOk = 0;
-const today = () => {
-  const d = new Date();
-  return {
-    ymd: `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`,
-    weekday: (d.getDay() + 6) % 7, // Monday = 0
-    midnight: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000,
-  };
-};
+// GTFS times count from "noon minus 12 hours", which differs from midnight on clock-change days.
+const dayInfo = d => ({
+  ymd: `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`,
+  weekday: (d.getDay() + 6) % 7, // Monday = 0
+  midnight: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTime() / 1000 - 43200,
+});
+const today = () => dayInfo(new Date());
+// Late-night buses belong to the previous day's service (listed as e.g. 24:30), so check both days.
+function serviceDays() {
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  return [dayInfo(y), today()].map(d => ({ midnight: d.midnight, active: activeServices(d) }));
+}
 let mode = store.get("mode-" + today().ymd, null) || (new Date().getHours() < 12 ? "work" : "home");
 let from = store.get("from-" + today().ymd, "home");
 const expanded = new Set();
@@ -324,12 +328,12 @@ function activeServices(t) {
 
 // ---------- Trip planning ----------
 const evTime = s => s && ((s.departure && s.departure.time) || (s.arrival && s.arrival.time));
-function legTrips(leg, t, active, now) {
+function legTrips(leg, days, now) {
   const stops = SCHED.stopsByDir[leg.dir], iF = stops.indexOf(leg.from) + 2, iT = stops.indexOf(leg.to) + 2;
   const out = [];
-  for (const r of SCHED.trips[leg.dir] || []) {
-    if (!active.has(r[1]) || r[iF] == null || r[iT] == null) continue;
-    const sDep = t.midnight + r[iF], sArr = t.midnight + r[iT];
+  for (const day of days) for (const r of SCHED.trips[leg.dir] || []) {
+    if (!day.active.has(r[1]) || r[iF] == null || r[iT] == null) continue;
+    const sDep = day.midnight + r[iF], sArr = day.midnight + r[iT];
     if (sArr < now - 3600 || sDep > now + (HORIZON_MIN + 60) * 60) continue;
     let dep = sDep, arr = sArr, status = "scheduled", delay = 0;
     const tu = live && live.byTrip.get(r[0]);
@@ -352,10 +356,10 @@ function legTrips(leg, t, active, now) {
   return out.sort((x, y) => x.dep - y.dep);
 }
 
-function journeys(opt, t, active, now, s) {
+function journeys(opt, days, now, s) {
   const walkTo = walkOf(opt, "walkTo") * 60, walkFrom = walkOf(opt, "walkFrom") * 60, buf = s.buffer * 60;
-  const first = legTrips(opt, t, active, now);
-  const second = opt.transfer ? legTrips(opt.transfer, t, active, now).filter(x => x.status !== "canceled") : null;
+  const first = legTrips(opt, days, now);
+  const second = opt.transfer ? legTrips(opt.transfer, days, now).filter(x => x.status !== "canceled") : null;
   const res = [];
   for (const j of first) {
     const leaveBy = j.dep - walkTo - buf;
@@ -388,8 +392,8 @@ function render() {
   renderStatus();
   if (!SCHED) return;
 
-  const t = today(), now = Date.now() / 1000, s = settings(), active = activeServices(t);
-  const rows = currentOptions().map(opt => ({ opt, list: journeys(opt, t, active, now, s) }));
+  const t = today(), now = Date.now() / 1000, s = settings(), days = serviceDays();
+  const rows = currentOptions().map(opt => ({ opt, list: journeys(opt, days, now, s) }));
   const catchable = rows.map(r => r.list.find(j => !j.canceled && !j.missingTransfer)).filter(Boolean);
   const best = catchable.slice().sort((a, b) => a.arrive - b.arrive || b.leaveBy - a.leaveBy)[0];
 
@@ -404,8 +408,7 @@ function render() {
       <p>${badge(j.route)} from ${esc(best.opt.stop)} at ${clock(j.dep)}${via}. You'll be ${dest} around ${clock(best.arrive)}.</p>
       <p class="muted">${j.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}</p>`;
   } else {
-    $("#hero").innerHTML = `<h1>No bus soon</h1><p>None of your options leave in the next ${HORIZON_MIN} minutes.</p>
-      <p class="muted">This page covers trips to work from 6 to 11:30 am and trips home from 2 to 10:30 pm.</p>`;
+    $("#hero").innerHTML = `<h1>No bus soon</h1><p>None of your options leave in the next ${HORIZON_MIN} minutes.</p>`;
   }
 
   // Timeline scale

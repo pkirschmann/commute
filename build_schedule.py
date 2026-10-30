@@ -22,10 +22,6 @@ STOPS_BY_DIR = {
     "B1": ["1301", "2858", "211"],   # N Park at W Dayton -> Fourth Street -> Commercial & North
     "D1": ["2896", "239"],           # W Johnson at N Orchard -> North at E Johnson
 }
-# Keep only trips that reach their first kept stop inside these windows (seconds after midnight).
-MORNING = (6 * 3600, 11 * 3600 + 30 * 60)
-EVENING = (14 * 3600, 22 * 3600 + 30 * 60)
-WINDOW = {k: (MORNING if k.endswith("0") else EVENING) for k in STOPS_BY_DIR}
 ROUTES = sorted({k[0] for k in STOPS_BY_DIR})
 
 
@@ -68,10 +64,6 @@ def build(zip_bytes):
             continue
         key = wanted[tid]
         row = [m.get(s) for s in STOPS_BY_DIR[key]]
-        first = next(x for x in row if x is not None)
-        lo, hi = WINDOW[key]
-        if not lo <= first <= hi:
-            continue
         sid = trips[tid]["service_id"]
         services.add(sid)
         out[key].append([tid, sid] + row)
