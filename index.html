@@ -129,6 +129,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 .sheet p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
 .field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 14px; }
 .field input[type=number] { width: 4.2em; }
+.field select { font: 500 16px var(--font); padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
 .field input { font: 500 16px var(--font); padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
 .field.wide { grid-template-columns: 1fr; }
 .field.wide input { width: 100%; }
@@ -172,6 +173,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
     <div class="sheet">
       <h2 id="settings-title">Settings</h2>
       <p>Saved on this phone only.</p>
+      <div class="field"><label for="work">My work place</label><select id="work"><option value="campus">Campus</option><option value="downtown">Downtown</option></select></div>
       <div class="field wide"><label for="relay">Live data link (your Cloudflare relay)</label><input id="relay" type="url" inputmode="url" placeholder="https://commute-relay.yourname.workers.dev" autocomplete="off"></div>
       <div class="field"><label for="buffer">Minutes to be at the stop before the bus</label><input id="buffer" type="number" min="0" max="15" step="1"></div>
       <div class="field"><label for="xfer">Minutes needed to change buses</label><input id="xfer" type="number" min="0" max="15" step="1"></div>
@@ -188,7 +190,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 
 <script>
 // ---------- Your setup ----------
-const DEFAULT_RELAY = "https://commute-relay.pkir.workers.dev"; // paste your Cloudflare Worker link here, e.g. "https://commute-relay.yourname.workers.dev"
+const DEFAULT_RELAY = "https://commute-relay.pkir.workers.dev"; // your Cloudflare Worker
 const POLL_SECONDS = 30;  // Metro refreshes its feed about every 30 seconds
 const HORIZON_MIN = 90;   // how far ahead to look
 
@@ -196,7 +198,7 @@ const PLACES = { home: "Home", daycare: "Daycare", campus: "Campus", downtown: "
 const ARRIVE = { home: "home", daycare: "at daycare", campus: "on campus", downtown: "downtown" };
 // You only ever travel between the north-side pair and the work pair.
 const GOES_TO = { home: ["campus", "downtown"], daycare: ["campus", "downtown"], campus: ["home", "daycare"], downtown: ["home", "daycare"] };
-const DEFAULT_PAIR = { am: ["home", "campus"], pm: ["campus", "home"] };
+const NORTH = ["home", "daycare"], WORK = ["campus", "downtown"];
 
 // Stop names by GTFS stop_id (not the 4-digit numbers on stop signs).
 const STOP = {
@@ -329,6 +331,7 @@ function settings() {
     buffer: Number.isFinite(s.buffer) ? s.buffer : 1,
     xfer: Number.isFinite(s.xfer) ? s.xfer : 1,
     walks: s.walks || {},
+    work: WORK.includes(s.work) ? s.work : "campus", // this phone's usual work place
   };
 }
 const walkKey = w => `${w.place}:${w.stops[0]}`;
@@ -360,19 +363,20 @@ function activeServices(t) {
   return on;
 }
 
-// Remember the last trip separately for mornings and afternoons, so each phone opens on its usual trip.
-const half = () => (new Date().getHours() < 12 ? "am" : "pm");
-let [from, to] = (() => {
-  const p = store.get("pair-" + half(), null);
-  return p && GOES_TO[p[0]]?.includes(p[1]) ? p : DEFAULT_PAIR[half()];
-})();
-function choose(f, t) {
-  from = f;
-  to = GOES_TO[f].includes(t) ? t : (store.get("last-to-" + f, null) || GOES_TO[f][0]);
-  if (!GOES_TO[f].includes(to)) to = GOES_TO[f][0];
-  store.set("pair-" + half(), [from, to]);
-  store.set("last-to-" + from, to);
+// Opening trip: mornings go from home to this phone's work place, afternoons from the work place home.
+// Daycare is one tap away in either picker.
+const isMorning = () => new Date().getHours() < 12;
+function initialTrip() {
+  const work = settings().work;
+  return isMorning() ? ["home", work] : [work, "home"];
 }
+let [from, to] = initialTrip();
+function chooseFrom(f) {
+  const sameSide = NORTH.includes(f) === NORTH.includes(from);
+  from = f;
+  if (!sameSide || !GOES_TO[f].includes(to)) to = NORTH.includes(f) ? settings().work : "home";
+}
+function chooseTo(t) { to = t; }
 const expanded = new Set();
 
 // ---------- Trip planning ----------
@@ -579,9 +583,9 @@ async function loadLive() {
 // ---------- Events ----------
 document.addEventListener("click", e => {
   const f = e.target.closest("[data-from]");
-  if (f) { choose(f.dataset.from, to); render(); return; }
+  if (f) { chooseFrom(f.dataset.from); render(); return; }
   const t = e.target.closest("[data-to]");
-  if (t) { choose(from, t.dataset.to); render(); return; }
+  if (t) { chooseTo(t.dataset.to); render(); return; }
   const o = e.target.closest("[data-opt]");
   if (o) { const id = o.dataset.opt; expanded.has(id) ? expanded.delete(id) : expanded.add(id); render(); }
 });
@@ -589,7 +593,7 @@ document.addEventListener("click", e => {
 const dlg = $("#settings");
 function fillSettings() {
   const s = settings();
-  $("#relay").value = s.relay; $("#buffer").value = s.buffer; $("#xfer").value = s.xfer;
+  $("#relay").value = s.relay; $("#buffer").value = s.buffer; $("#xfer").value = s.xfer; $("#work").value = s.work;
   $("#walk-fields").innerHTML = Object.keys(PLACES).map(p => `<h4>${PLACES[p]}</h4>` +
     WALKS.filter(w => w.place === p).map(w => `<div class="field"><label for="w-${walkKey(w)}">${esc(w.label)}</label>
       <input id="w-${walkKey(w)}" type="number" min="0" max="40" data-walk="${walkKey(w)}" value="${walkMin(w.place, w.stops[0])}"></div>`).join("")
@@ -602,11 +606,18 @@ dlg.addEventListener("close", () => {
   const num = (v, d) => (v === "" || !Number.isFinite(Number(v)) ? d : Number(v));
   const walks = {};
   document.querySelectorAll("[data-walk]").forEach(i => { if (i.value !== "") walks[i.dataset.walk] = Number(i.value); });
-  store.set("settings", { relay: $("#relay").value.trim(), buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walks });
+  store.set("settings", { relay: $("#relay").value.trim(), buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walks, work: $("#work").value });
+  [from, to] = initialTrip();
   live = null; liveError = null; render(); loadLive();
 });
 
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { render(); loadLive(); } });
+// Phones often resume a home-screen page instead of reloading it, so reset the trip after a long break.
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 20 * 60 * 1000) [from, to] = initialTrip();
+  render(); loadLive();
+});
 setInterval(render, 15000);
 setInterval(loadLive, POLL_SECONDS * 1000);
 

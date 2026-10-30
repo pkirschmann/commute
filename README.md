@@ -74,7 +74,7 @@ Open the GitHub Pages address on your phone. On iPhone: **Share → Add to Home 
 ## Adjusting it
 
 - **Walking times:** tap the gear icon. Walking minutes are listed by place and stop, and each number is used in both directions. The defaults are estimates from the stop locations, so time yourself once and update them. Settings are saved per phone, so each person can set their own.
-- **Your usual trip:** the page remembers the last trip you picked, separately for mornings and afternoons, so it opens on your usual trip.
+- **My work place:** in Settings, choose Campus or Downtown for this phone. Before noon the page opens on Home → your work place; after noon, your work place → Home. Tapping Home or Daycare under "Starting from" fills in your work place as the destination, and either picker can be changed with one tap.
 - **Buffer:** minutes you want to be at the stop before the bus (default 1). Raise it in winter.
 - **Transfer time:** minimum minutes to change from the A to the B at Fourth Street (default 1). Both stop at the same eastbound platform.
 
