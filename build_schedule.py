@@ -15,12 +15,14 @@ GTFS_URL = "https://transitdata.cityofmadison.com/GTFS/mmt_gtfs.zip"
 # route + direction_id -> stops to keep, in travel order (first = board, last = alight).
 # Stop IDs are GTFS stop_id values (not the 4-digit numbers on stop signs).
 STOPS_BY_DIR = {
-    "B0": ["218", "2857", "2844"],   # Commercial & North -> Fourth Street -> East Campus (Chazen)
-    "D0": ["581", "2810"],           # E Johnson at North -> University at N Mills
-    "A0": ["2857", "2864"],          # Fourth Street -> Orchard
-    "A1": ["2865", "2858"],          # Orchard (Johnson St side) -> Fourth Street eastbound
-    "B1": ["1301", "2858", "211"],   # N Park at W Dayton -> Fourth Street -> Commercial & North
-    "D1": ["2896", "239"],           # W Johnson at N Orchard -> North at E Johnson
+    # Toward campus: Commercial & North -> Fourth Street -> Capitol Square (Mifflin) -> East Campus (Chazen)
+    "B0": ["218", "2857", "2847", "2844"],
+    "D0": ["581", "2083", "2810"],          # E Johnson at North -> W Gorham at Wisconsin -> University at N Mills
+    "A0": ["2857", "2847", "2864"],         # Fourth Street -> Capitol Square (Mifflin) -> Orchard
+    # Toward the east/north side: Orchard (Johnson St side) -> Capitol Square (Main & MLK) -> Fourth Street
+    "A1": ["2865", "2848", "2858"],
+    "B1": ["1301", "2848", "2858", "211"],  # Park & Dayton -> Capitol Square -> Fourth Street -> Commercial & North
+    "D1": ["2896", "239"],                  # W Johnson at N Orchard -> North at E Johnson
 }
 ROUTES = sorted({k[0] for k in STOPS_BY_DIR})
 

@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#E8EEF1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1924" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Commute">
+<meta name="apple-mobile-web-app-title" content="Bus">
 <title>Bus Commute</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,19 +37,20 @@ main { max-width: 560px; margin: 0 auto; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 
-/* Top bar */
-.top { display: flex; align-items: center; gap: 8px; padding: 14px 0 10px; }
-.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 3px; }
+/* Place pickers */
+.pickers { padding: 12px 0 14px; display: grid; gap: 10px; }
+.pick-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.pick-label { color: var(--muted); font-size: 14px; }
+.seg { display: flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 3px; }
 .seg button {
-  border: 0; background: none; padding: 7px 14px; border-radius: 999px; font-weight: 600; font-size: 15px; cursor: pointer;
+  flex: 1; border: 0; background: none; padding: 7px 4px; border-radius: 999px;
+  font-weight: 500; font-size: 15px; cursor: pointer; white-space: nowrap;
 }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.seg.small button { font-size: 14px; padding: 5px 12px; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 600; }
 .icon-btn {
-  margin-left: auto; border: 1px solid var(--rule); background: var(--surface); width: 40px; height: 40px;
+  border: 1px solid var(--rule); background: var(--surface); width: 34px; height: 34px;
   border-radius: 50%; display: grid; place-items: center; cursor: pointer;
 }
-.sub { display: flex; align-items: center; gap: 10px; margin: 2px 0 14px; color: var(--muted); font-size: 14px; }
 
 /* Status */
 .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
@@ -59,9 +60,7 @@ button { font: inherit; color: inherit; }
 
 /* Hero */
 .hero { padding: 6px 0 18px; }
-.hero h1 {
-  font: 600 clamp(44px, 14vw, 72px)/0.95 var(--num); letter-spacing: -0.01em; margin: 0 0 10px;
-}
+.hero h1 { font: 600 clamp(44px, 14vw, 72px)/0.95 var(--num); letter-spacing: -0.01em; margin: 0 0 10px; }
 .hero p { margin: 0; font-size: 18px; line-height: 1.35; max-width: 34ch; }
 .hero .muted { color: var(--muted); font-size: 15px; margin-top: 4px; }
 .badge {
@@ -83,6 +82,7 @@ button { font: inherit; color: inherit; }
 .axis { position: relative; height: 18px; margin: 0 0 4px; font: 500 12px/1 var(--num); color: var(--muted); }
 .axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .axis span:first-child { transform: none; }
+.axis span:last-child { transform: translateX(-100%); }
 .opt { border-top: 1px solid var(--rule); padding: 12px 0; }
 .opt:first-of-type { border-top: 0; }
 .opt-head {
@@ -99,7 +99,6 @@ button { font: inherit; color: inherit; }
 .bar i.walk { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
 .bar i.wait { height: 6px; top: 4px; opacity: 0.45; }
 .bar i.A { background-color: var(--A); } .bar i.B { background-color: var(--B); } .bar i.D { background-color: var(--D); }
-.bar i.missing { background: none; border: 1px dashed var(--muted); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 10px 0 8px; border-top: 1px solid var(--rule); }
 .legend b { display: inline-block; width: 18px; height: 8px; border-radius: 2px; vertical-align: 0; margin-right: 5px; }
 .legend .lw { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
@@ -126,6 +125,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 .sheet { padding: 18px 18px 8px; }
 .sheet h2 { margin: 0 0 4px; font: 600 22px/1.2 var(--num); }
 .sheet h3 { margin: 18px 0 6px; font-size: 15px; }
+.sheet h4 { margin: 12px 0 2px; font-size: 13px; color: var(--muted); font-weight: 600; }
 .sheet p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
 .field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 14px; }
 .field input[type=number] { width: 4.2em; }
@@ -140,24 +140,23 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 </head>
 <body>
 <main>
-  <div class="top">
-    <div class="seg" role="group" aria-label="Direction">
-      <button type="button" data-mode="work">To work</button>
-      <button type="button" data-mode="home">Home</button>
+  <div class="pickers">
+    <div>
+      <div class="pick-head">
+        <span class="pick-label" id="from-label">Starting from</span>
+        <button class="icon-btn" type="button" id="open-settings" aria-label="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+      </div>
+      <div class="seg" role="group" aria-labelledby="from-label" id="from-seg"></div>
     </div>
-    <button class="icon-btn" type="button" id="open-settings" aria-label="Settings">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-    </button>
-  </div>
-  <div class="sub" id="from-row" hidden>
-    <span>Starting from</span>
-    <div class="seg small" role="group" aria-label="Starting point">
-      <button type="button" data-from="home">Home</button>
-      <button type="button" data-from="daycare">Daycare</button>
+    <div>
+      <div class="pick-head"><span class="pick-label" id="to-label">Going to</span></div>
+      <div class="seg" role="group" aria-labelledby="to-label" id="to-seg"></div>
     </div>
   </div>
 
-  <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading schedule</span></div>
+  <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading timetable</span></div>
   <section class="hero" id="hero" aria-live="polite"></section>
   <div id="alerts"></div>
   <section class="board" id="board" aria-label="Your options"></section>
@@ -177,7 +176,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
       <div class="field"><label for="buffer">Minutes to be at the stop before the bus</label><input id="buffer" type="number" min="0" max="15" step="1"></div>
       <div class="field"><label for="xfer">Minutes needed to change buses</label><input id="xfer" type="number" min="0" max="15" step="1"></div>
       <h3>Walking minutes</h3>
-      <p>First number: walk to the stop. Second: walk from where you get off.</p>
+      <p>Between each place and its stops, in either direction.</p>
       <div id="walk-fields"></div>
     </div>
     <div class="sheet-actions">
@@ -189,31 +188,64 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 
 <script>
 // ---------- Your setup ----------
-const DEFAULT_RELAY = "https://commute-relay.pkir.workers.dev"; // paste your Cloudflare Worker link here, e.g. "https://commute-relay.yourname.workers.dev"
+const DEFAULT_RELAY = ""; // paste your Cloudflare Worker link here, e.g. "https://commute-relay.yourname.workers.dev"
 const POLL_SECONDS = 30;  // Metro refreshes its feed about every 30 seconds
 const HORIZON_MIN = 90;   // how far ahead to look
 
-// Each option: route, direction, board stop, alight stop (GTFS stop_id), default walk minutes.
-const PLANS = {
-  work: {
-    home: [
-      { id: "b-commercial", route: "B", dir: "B0", from: "218", to: "2844", stop: "Commercial & North", name: "B at Commercial & North", sub: "Get off at East Campus, by the Chazen", walkTo: 4, walkFrom: 7 },
-      { id: "d-johnson", route: "D", dir: "D0", from: "581", to: "2810", stop: "Johnson & North", name: "D at Johnson & North", sub: "Get off at University & Mills", walkTo: 9, walkFrom: 2 },
-    ],
-    daycare: [
-      { id: "a-fourth", route: "A", dir: "A0", from: "2857", to: "2864", stop: "Fourth Street", name: "A at Fourth Street", sub: "Get off at Orchard", walkTo: 3, walkFrom: 2 },
-      { id: "b-fourth", route: "B", dir: "B0", from: "2857", to: "2844", stop: "Fourth Street", name: "B at Fourth Street", sub: "Get off at East Campus, by the Chazen", walkTo: 3, walkFrom: 7 },
-    ],
-  },
-  home: [
-    { id: "b-park", route: "B", dir: "B1", from: "1301", to: "211", stop: "Park & Dayton", name: "B at Park & Dayton", sub: "Get off at Commercial & North", walkTo: 9, walkFrom: 4 },
-    { id: "d-orchard", route: "D", dir: "D1", from: "2896", to: "239", stop: "Johnson & Orchard", name: "D at Johnson & Orchard", sub: "Get off at North & Johnson", walkTo: 4, walkFrom: 9 },
-    { id: "a-then-b", route: "A", dir: "A1", from: "2865", to: "2858", stop: "Orchard", name: "A at Orchard, then B", sub: "Change to the B at Fourth Street", walkTo: 3, walkFrom: 4,
-      transfer: { route: "B", dir: "B1", from: "2858", to: "211" } },
-  ],
+const PLACES = { home: "Home", daycare: "Daycare", campus: "Campus", downtown: "Downtown" };
+const ARRIVE = { home: "home", daycare: "at daycare", campus: "on campus", downtown: "downtown" };
+// You only ever travel between the north-side pair and the work pair.
+const GOES_TO = { home: ["campus", "downtown"], daycare: ["campus", "downtown"], campus: ["home", "daycare"], downtown: ["home", "daycare"] };
+const DEFAULT_PAIR = { am: ["home", "campus"], pm: ["campus", "home"] };
+
+// Stop names by GTFS stop_id (not the 4-digit numbers on stop signs).
+const STOP = {
+  "218": "Commercial & North", "211": "Commercial & North", "581": "Johnson & North", "239": "North & Johnson",
+  "2857": "Fourth Street", "2858": "Fourth Street", "2844": "East Campus", "2810": "University & Mills",
+  "2864": "Orchard", "2865": "Orchard", "2896": "Johnson & Orchard", "1301": "Park & Dayton",
+  "2847": "Capitol Square", "2848": "Capitol Square", "2083": "Gorham & Wisconsin",
 };
-const ALL_OPTIONS = [...PLANS.work.home, ...PLANS.work.daycare, ...PLANS.home];
+// Walking minutes between a place and its stops. Stops that share a line share one walk time.
+const WALKS = [
+  { place: "home", stops: ["218", "211"], min: 4, label: "Commercial & North" },
+  { place: "home", stops: ["581", "239"], min: 9, label: "Johnson & North" },
+  { place: "daycare", stops: ["2857", "2858"], min: 3, label: "Fourth Street (E Wash & 4th)" },
+  { place: "campus", stops: ["2844"], min: 7, label: "East Campus, by the Chazen" },
+  { place: "campus", stops: ["2810"], min: 2, label: "University & Mills" },
+  { place: "campus", stops: ["2864", "2865"], min: 3, label: "Orchard station" },
+  { place: "campus", stops: ["2896"], min: 4, label: "Johnson & Orchard" },
+  { place: "campus", stops: ["1301"], min: 9, label: "Park & Dayton" },
+  { place: "downtown", stops: ["2847"], min: 6, label: "Capitol Square, Mifflin side (arriving)" },
+  { place: "downtown", stops: ["2848"], min: 2, label: "Capitol Square, Main & MLK (leaving)" },
+  { place: "downtown", stops: ["2083"], min: 8, label: "Gorham & Wisconsin (D)" },
+];
+
+// Route options for each trip. A second leg means changing buses.
+const leg = (route, dir, from, to) => ({ route, dir, from, to });
+const ROUTES = {
+  "home>campus": [[leg("B", "B0", "218", "2844")], [leg("D", "D0", "581", "2810")]],
+  "home>downtown": [[leg("B", "B0", "218", "2847")], [leg("D", "D0", "581", "2083")]],
+  "daycare>campus": [[leg("A", "A0", "2857", "2864")], [leg("B", "B0", "2857", "2844")]],
+  "daycare>downtown": [[leg("A", "A0", "2857", "2847")], [leg("B", "B0", "2857", "2847")]],
+  "campus>home": [[leg("B", "B1", "1301", "211")], [leg("D", "D1", "2896", "239")],
+                  [leg("A", "A1", "2865", "2858"), leg("B", "B1", "2858", "211")]],
+  "campus>daycare": [[leg("A", "A1", "2865", "2858")], [leg("B", "B1", "1301", "2858")]],
+  // No A-then-B option from downtown: the B it would connect to is the same bus that stops at Capitol Square first.
+  "downtown>home": [[leg("B", "B1", "2848", "211")]],
+  "downtown>daycare": [[leg("A", "A1", "2848", "2858")], [leg("B", "B1", "2848", "2858")]],
+};
 const OUR_ROUTES = new Set(["A", "B", "D"]);
+
+function optionsFor(from, to) {
+  return (ROUTES[`${from}>${to}`] || []).map((legs, i) => {
+    const first = legs[0], last = legs[legs.length - 1];
+    return {
+      id: `${from}>${to}#${i}`, legs, from, to, route: first.route, stop: STOP[first.from],
+      name: `${first.route} at ${STOP[first.from]}` + (legs[1] ? `, then ${legs[1].route}` : ""),
+      sub: legs[1] ? `Change to the ${legs[1].route} at ${STOP[legs[1].from]}` : `Get off at ${STOP[last.to]}`,
+    };
+  });
+}
 
 // ---------- GTFS-Realtime decoder (no libraries) ----------
 const GTFSRT = (() => {
@@ -296,10 +328,16 @@ function settings() {
     relay: (s.relay ?? DEFAULT_RELAY).replace(/\/+$/, ""),
     buffer: Number.isFinite(s.buffer) ? s.buffer : 1,
     xfer: Number.isFinite(s.xfer) ? s.xfer : 1,
-    walk: s.walk || {},
+    walks: s.walks || {},
   };
 }
-const walkOf = (opt, which) => { const w = settings().walk[opt.id]; return w && Number.isFinite(w[which]) ? w[which] : opt[which]; };
+const walkKey = w => `${w.place}:${w.stops[0]}`;
+function walkMin(place, stopId) {
+  const w = WALKS.find(x => x.place === place && x.stops.includes(stopId));
+  if (!w) return 5;
+  const v = settings().walks[walkKey(w)];
+  return Number.isFinite(v) ? v : w.min;
+}
 
 // ---------- State ----------
 let SCHED = null, schedError = null, live = null, liveError = null, lastFetchOk = 0;
@@ -315,10 +353,6 @@ function serviceDays() {
   const y = new Date(); y.setDate(y.getDate() - 1);
   return [dayInfo(y), today()].map(d => ({ midnight: d.midnight, active: activeServices(d) }));
 }
-let mode = store.get("mode-" + today().ymd, null) || (new Date().getHours() < 12 ? "work" : "home");
-let from = store.get("from-" + today().ymd, "home");
-const expanded = new Set();
-
 function activeServices(t) {
   const on = new Set();
   for (const [sid, days, start, end] of SCHED.calendar) if (days[t.weekday] === "1" && start <= t.ymd && t.ymd <= end) on.add(sid);
@@ -326,11 +360,28 @@ function activeServices(t) {
   return on;
 }
 
+// Remember the last trip separately for mornings and afternoons, so each phone opens on its usual trip.
+const half = () => (new Date().getHours() < 12 ? "am" : "pm");
+let [from, to] = (() => {
+  const p = store.get("pair-" + half(), null);
+  return p && GOES_TO[p[0]]?.includes(p[1]) ? p : DEFAULT_PAIR[half()];
+})();
+function choose(f, t) {
+  from = f;
+  to = GOES_TO[f].includes(t) ? t : (store.get("last-to-" + f, null) || GOES_TO[f][0]);
+  if (!GOES_TO[f].includes(to)) to = GOES_TO[f][0];
+  store.set("pair-" + half(), [from, to]);
+  store.set("last-to-" + from, to);
+}
+const expanded = new Set();
+
 // ---------- Trip planning ----------
 const evTime = s => s && ((s.departure && s.departure.time) || (s.arrival && s.arrival.time));
 function legTrips(leg, days, now) {
-  const stops = SCHED.stopsByDir[leg.dir], iF = stops.indexOf(leg.from) + 2, iT = stops.indexOf(leg.to) + 2;
-  const out = [];
+  const stops = SCHED.stopsByDir[leg.dir] || [];
+  const fi = stops.indexOf(leg.from), ti = stops.indexOf(leg.to);
+  if (fi < 0 || ti < 0) return null; // timetable is older than this page
+  const iF = fi + 2, iT = ti + 2, out = [];
   for (const day of days) for (const r of SCHED.trips[leg.dir] || []) {
     if (!day.active.has(r[1]) || r[iF] == null || r[iT] == null) continue;
     const sDep = day.midnight + r[iF], sArr = day.midnight + r[iT];
@@ -351,23 +402,26 @@ function legTrips(leg, days, now) {
         delay = dep - sDep;
       }
     }
-    out.push({ tripId: r[0], route: leg.route, sDep, dep, arr, status, delay });
+    out.push({ tripId: r[0], route: leg.route, from: leg.from, sDep, dep, arr, status, delay });
   }
   return out.sort((x, y) => x.dep - y.dep);
 }
 
 function journeys(opt, days, now, s) {
-  const walkTo = walkOf(opt, "walkTo") * 60, walkFrom = walkOf(opt, "walkFrom") * 60, buf = s.buffer * 60;
-  const first = legTrips(opt, days, now);
-  const second = opt.transfer ? legTrips(opt.transfer, days, now).filter(x => x.status !== "canceled") : null;
+  const [l1, l2] = opt.legs;
+  const walkTo = walkMin(opt.from, l1.from) * 60, walkFrom = walkMin(opt.to, (l2 || l1).to) * 60, buf = s.buffer * 60;
+  const first = legTrips(l1, days, now);
+  const second = l2 ? legTrips(l2, days, now) : null;
+  if (!first || (l2 && !second)) return null;
+  const connecting = second && second.filter(x => x.status !== "canceled");
   const res = [];
   for (const j of first) {
     const leaveBy = j.dep - walkTo - buf;
     if (leaveBy < now - 30) continue;
     if (leaveBy > now + HORIZON_MIN * 60) break;
     const out = { opt, leaveBy, legs: [j], arrive: j.arr + walkFrom, canceled: j.status === "canceled", missingTransfer: false };
-    if (second && !out.canceled) {
-      const next = second.find(x => x.dep >= j.arr + s.xfer * 60);
+    if (connecting && !out.canceled) {
+      const next = connecting.find(x => x.dep >= j.arr + s.xfer * 60);
       if (next) { out.legs.push(next); out.arrive = next.arr + walkFrom; }
       else { out.missingTransfer = true; out.arrive = Infinity; }
     }
@@ -383,30 +437,36 @@ const clock = sec => new Date(sec * 1000).toLocaleTimeString([], { hour: "numeri
 const mins = sec => Math.max(0, Math.round(sec / 60));
 const badge = (r, sm) => `<span class="badge ${r}${sm ? " sm" : ""}" aria-label="Route ${r}">${r}</span>`;
 
-function currentOptions() { return mode === "work" ? PLANS.work[from] : PLANS.home; }
+function renderPickers() {
+  const btns = (keys, cur, attr) => keys.map(k => `<button type="button" ${attr}="${k}" aria-pressed="${k === cur}">${PLACES[k]}</button>`).join("");
+  $("#from-seg").innerHTML = btns(Object.keys(PLACES), from, "data-from");
+  $("#to-seg").innerHTML = btns(GOES_TO[from], to, "data-to");
+}
 
 function render() {
-  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
-  document.querySelectorAll("[data-from]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.from === from)));
-  $("#from-row").hidden = mode !== "work";
+  renderPickers();
   renderStatus();
   if (!SCHED) return;
 
   const t = today(), now = Date.now() / 1000, s = settings(), days = serviceDays();
-  const rows = currentOptions().map(opt => ({ opt, list: journeys(opt, days, now, s) }));
+  const opts = optionsFor(from, to);
+  const rows = opts.map(opt => ({ opt, list: journeys(opt, days, now, s) }));
+  const stale = rows.some(r => r.list === null);
+  rows.forEach(r => { r.list ||= []; });
   const catchable = rows.map(r => r.list.find(j => !j.canceled && !j.missingTransfer)).filter(Boolean);
   const best = catchable.slice().sort((a, b) => a.arrive - b.arrive || b.leaveBy - a.leaveBy)[0];
 
   // Hero
-  const dest = mode === "work" ? "at work" : "home";
   if (best) {
     const lead = best.leaveBy - now;
     const head = lead < 45 ? "Leave now" : `Leave in ${mins(lead)} min`;
-    const j = best.legs[0];
-    const via = best.legs[1] ? `, then ${badge("B", true)} at Fourth Street` : "";
+    const [a, b] = best.legs;
+    const via = b ? `, then ${badge(b.route, true)} at ${esc(STOP[b.from])}` : "";
     $("#hero").innerHTML = `<h1>${head}</h1>
-      <p>${badge(j.route)} from ${esc(best.opt.stop)} at ${clock(j.dep)}${via}. You'll be ${dest} around ${clock(best.arrive)}.</p>
-      <p class="muted">${j.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}</p>`;
+      <p>${badge(a.route)} from ${esc(best.opt.stop)} at ${clock(a.dep)}${via}. You'll be ${ARRIVE[to]} around ${clock(best.arrive)}.</p>
+      <p class="muted">${a.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}</p>`;
+  } else if (stale) {
+    $("#hero").innerHTML = `<h1>Timetable needs updating</h1><p>Run the "Update bus schedule" action on GitHub so this page knows the stops for this trip.</p>`;
   } else {
     $("#hero").innerHTML = `<h1>No bus soon</h1><p>None of your options leave in the next ${HORIZON_MIN} minutes.</p>`;
   }
@@ -424,8 +484,7 @@ function render() {
     const open = expanded.has(opt.id);
     let bar = "", when = `<span class="opt-when">None<small>next ${HORIZON_MIN} min</small></span>`;
     if (next) {
-      const wt = walkOf(opt, "walkTo") * 60, wf = walkOf(opt, "walkFrom") * 60;
-      const a = next.legs[0], b = next.legs[1];
+      const [a, b] = next.legs;
       const seg = (cls, s0, s1) => s1 > s0 ? `<i class="${cls}" style="left:${pct(s0)}%;width:${Math.max(0.6, pct(s1) - pct(s0))}%"></i>` : "";
       bar = `<div class="bar" aria-hidden="true">
         ${seg("walk", next.leaveBy, a.dep - s.buffer * 60)}
@@ -435,21 +494,22 @@ function render() {
         ${seg("walk", (b || a).arr, next.arrive)}
       </div>`;
       const lead = next.leaveBy - now;
-      when = `<span class="opt-when">${lead < 45 ? "Now" : mins(lead) + " min"}<small>${dest === "home" ? "home" : "work"} ${clock(next.arrive)}</small></span>`;
+      when = `<span class="opt-when">${lead < 45 ? "Now" : mins(lead) + " min"}<small>arrive ${clock(next.arrive)}</small></span>`;
     }
     const deps = list.slice(0, 4).map(j => {
       const a = j.legs[0];
       const tag = a.status === "canceled" ? `<span class="tag late">Canceled</span>`
         : a.status === "live" ? `<span class="tag ${a.delay > 120 ? "late" : "live"}">${a.delay > 90 ? mins(a.delay) + " min late" : a.delay < -90 ? mins(-a.delay) + " min early" : "Live, on time"}</span>`
         : a.status === "estimated" ? `<span class="tag">Estimated</span>` : `<span class="tag">Timetable</span>`;
+      const second = opt.legs[1];
       const note = j.canceled ? `<span class="cx">Bus at ${clock(a.sDep)}</span>`
-        : j.missingTransfer ? `Bus ${clock(a.dep)}, no B connection found`
-        : `Bus ${clock(a.dep)}${j.legs[1] ? `, B ${clock(j.legs[1].dep)}` : ""}, ${mode === "work" ? "work" : "home"} ${clock(j.arrive)}`;
+        : j.missingTransfer ? `Bus ${clock(a.dep)}, no ${second.route} connection found`
+        : `Bus ${clock(a.dep)}${j.legs[1] ? `, ${j.legs[1].route} ${clock(j.legs[1].dep)}` : ""}, arrive ${clock(j.arrive)}`;
       return `<li><span class="t">${j.canceled ? "–" : clock(j.leaveBy)}</span><span class="note">${note}</span>${tag}</li>`;
     }).join("");
     return `<div class="opt${isBest ? " best" : ""}">
-      <button class="opt-head" type="button" aria-expanded="${open}" data-opt="${opt.id}">
-        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span><span class="opt-sub">${esc(opt.sub)}, ${walkOf(opt, "walkTo")} min walk to the stop</span></span>
+      <button class="opt-head" type="button" aria-expanded="${open}" data-opt="${esc(opt.id)}">
+        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span><span class="opt-sub">${esc(opt.sub)}, ${walkMin(opt.from, opt.legs[0].from)} min walk to the stop</span></span>
         ${when}
       </button>
       ${bar}
@@ -459,9 +519,9 @@ function render() {
 
   $("#board").innerHTML = axis + optHtml + `<div class="legend" aria-hidden="true"><span><b class="lw"></b>Walk</span><span><b class="lq"></b>Wait at stop</span><span><b class="lr"></b>On the bus</span><span>Tap an option for more times</span></div>`;
 
-  // Alerts for our routes or stops
-  const ourStops = new Set(currentOptions().flatMap(o => [o.from, o.to, ...(o.transfer ? [o.transfer.from, o.transfer.to] : [])]));
-  const routes = new Set(currentOptions().flatMap(o => [o.route, ...(o.transfer ? [o.transfer.route] : [])]));
+  // Alerts for the routes and stops on this trip
+  const ourStops = new Set(opts.flatMap(o => o.legs.flatMap(l => [l.from, l.to])));
+  const routes = new Set(opts.flatMap(o => o.legs.map(l => l.route)));
   const alerts = (live?.alerts || []).filter(a =>
     (a.routes.some(r => routes.has(r)) || a.stops.some(x => ourStops.has(x))) &&
     (!a.periods.length || a.periods.some(([st, en]) => (!st || st <= now) && (!en || en >= now))));
@@ -518,10 +578,10 @@ async function loadLive() {
 
 // ---------- Events ----------
 document.addEventListener("click", e => {
-  const m = e.target.closest("[data-mode]");
-  if (m) { mode = m.dataset.mode; store.set("mode-" + today().ymd, mode); render(); return; }
   const f = e.target.closest("[data-from]");
-  if (f) { from = f.dataset.from; store.set("from-" + today().ymd, from); render(); return; }
+  if (f) { choose(f.dataset.from, to); render(); return; }
+  const t = e.target.closest("[data-to]");
+  if (t) { choose(from, t.dataset.to); render(); return; }
   const o = e.target.closest("[data-opt]");
   if (o) { const id = o.dataset.opt; expanded.has(id) ? expanded.delete(id) : expanded.add(id); render(); }
 });
@@ -530,18 +590,19 @@ const dlg = $("#settings");
 function fillSettings() {
   const s = settings();
   $("#relay").value = s.relay; $("#buffer").value = s.buffer; $("#xfer").value = s.xfer;
-  $("#walk-fields").innerHTML = ALL_OPTIONS.map(o => `<div class="field"><span>${badge(o.route, true)} ${esc(o.name)}</span>
-    <span><input type="number" min="0" max="40" aria-label="${esc(o.name)}: minutes walking to the stop" data-walk="${o.id}" data-which="walkTo" value="${walkOf(o, "walkTo")}">
-    <input type="number" min="0" max="40" aria-label="${esc(o.name)}: minutes walking after getting off" data-walk="${o.id}" data-which="walkFrom" value="${walkOf(o, "walkFrom")}"></span></div>`).join("");
+  $("#walk-fields").innerHTML = Object.keys(PLACES).map(p => `<h4>${PLACES[p]}</h4>` +
+    WALKS.filter(w => w.place === p).map(w => `<div class="field"><label for="w-${walkKey(w)}">${esc(w.label)}</label>
+      <input id="w-${walkKey(w)}" type="number" min="0" max="40" data-walk="${walkKey(w)}" value="${walkMin(w.place, w.stops[0])}"></div>`).join("")
+  ).join("");
 }
 $("#open-settings").addEventListener("click", () => { fillSettings(); dlg.showModal(); });
 $("#reset-settings").addEventListener("click", () => { store.del("settings"); fillSettings(); });
 dlg.addEventListener("close", () => {
   if (dlg.returnValue !== "save") return;
-  const walk = {};
-  document.querySelectorAll("[data-walk]").forEach(i => { (walk[i.dataset.walk] ||= {})[i.dataset.which] = Number(i.value); });
   const num = (v, d) => (v === "" || !Number.isFinite(Number(v)) ? d : Number(v));
-  store.set("settings", { relay: $("#relay").value.trim(), buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walk });
+  const walks = {};
+  document.querySelectorAll("[data-walk]").forEach(i => { if (i.value !== "") walks[i.dataset.walk] = Number(i.value); });
+  store.set("settings", { relay: $("#relay").value.trim(), buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walks });
   live = null; liveError = null; render(); loadLive();
 });
 
