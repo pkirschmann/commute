@@ -17,7 +17,7 @@
 <style>
 :root {
   --bg: #E8EEF1; --surface: #F7FAFB; --ink: #16263A; --muted: #56677A; --rule: #C6D2DA;
-  --walk: #8394A4; --idle: #C6D2DA; --focus: #1E6FD9; --warn-bg: #FFF3D6; --warn-ink: #5C4300;
+  --walk: #8394A4; --idle: #C6D2DA; --focus: #1E6FD9; --warn-bg: #FFF3D6; --warn-ink: #5C4300; --hurry: #B54708;
   --A: #EE3325; --B: #80BC00; --D: #333366; --A-ink: #fff; --B-ink: #10220A; --D-ink: #fff;
   --font: "Barlow", system-ui, sans-serif; --num: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
   color-scheme: light dark;
@@ -25,7 +25,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0E1924; --surface: #152433; --ink: #E4ECF2; --muted: #98A8B6; --rule: #2B3D4F;
-    --walk: #7A8C9C; --idle: #2B3D4F; --focus: #7FB2FF; --warn-bg: #3A2F12; --warn-ink: #F5DFA6;
+    --walk: #7A8C9C; --idle: #2B3D4F; --focus: #7FB2FF; --warn-bg: #3A2F12; --warn-ink: #F5DFA6; --hurry: #F5B05A;
     --D: #6A6ABF;
   }
 }
@@ -60,10 +60,19 @@ button { font: inherit; color: inherit; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--walk); flex: none; }
 .status.live .dot { background: #2E9E5B; }
 .status.off .dot { background: #C98A00; }
+.status .temp { margin-left: auto; font: 600 14px/1 var(--num); color: var(--ink); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+a { color: inherit; }
 
 /* Hero */
 .hero { padding: 6px 0 18px; }
-.hero h1 { font: 600 clamp(44px, 14vw, 72px)/0.95 var(--num); letter-spacing: -0.01em; margin: 0 0 10px; }
+.hero .lead { font: 600 24px/1.15 var(--num); margin: 0 0 2px; }
+.hero .lead.hurry { color: var(--hurry); }
+.hero h1 {
+  font: 600 clamp(60px, 18vw, 88px)/0.95 var(--num); letter-spacing: -0.01em; margin: 0 0 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.hero .note { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-ink); font-size: 15px; max-width: none; }
 .hero p { margin: 0; font-size: 18px; line-height: 1.35; max-width: 34ch; }
 .hero .muted { color: var(--muted); font-size: 15px; margin-top: 4px; }
 .badge {
@@ -74,6 +83,8 @@ button { font: inherit; color: inherit; }
 .badge.B { background: var(--B); color: var(--B-ink); }
 .badge.D { background: var(--D); color: var(--D-ink); }
 .badge.sm { min-width: 22px; height: 22px; font-size: 14px; border-radius: 6px; vertical-align: -4px; }
+.badge.lg { min-width: 0.7em; height: 0.7em; font-size: 1em; padding: 0 0.12em; border-radius: 0.14em; }
+.badge.lg span { font-size: 0.62em; }
 
 /* Alerts */
 .alert { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; margin: 0 0 14px; font-size: 14px; }
@@ -94,6 +105,9 @@ button { font: inherit; color: inherit; }
 }
 .opt-name { font-weight: 600; font-size: 16px; }
 .opt-sub { color: var(--muted); font-size: 13px; display: block; font-weight: 400; }
+.opt-plan { display: block; font-size: 14px; margin-top: 1px; }
+.opt-hurry { display: block; font-size: 13px; color: var(--hurry); font-weight: 500; }
+.opt-when.hurry { color: var(--hurry); }
 .opt-when { font: 600 20px/1.1 var(--num); text-align: right; white-space: nowrap; }
 .opt-when small { display: block; font: 500 12px/1.2 var(--font); color: var(--muted); }
 .opt.best .opt-name::after { content: "Best"; font: 600 11px/1 var(--font); background: var(--ink); color: var(--bg); padding: 3px 6px; border-radius: 4px; margin-left: 8px; vertical-align: 2px; }
@@ -102,16 +116,21 @@ button { font: inherit; color: inherit; }
 .bar i.walk { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
 .bar i.wait { height: 6px; top: 4px; opacity: 0.45; }
 .bar i.A { background-color: var(--A); } .bar i.B { background-color: var(--B); } .bar i.D { background-color: var(--D); }
+.bar.tight { height: 10px; margin-top: 8px; }
+.bar.tight i.A, .bar.tight i.B, .bar.tight i.D { background-image: repeating-linear-gradient(135deg, var(--surface) 0 3px, transparent 3px 7px); }
+.bar.tight + .bar { margin-top: 5px; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 10px 0 8px; border-top: 1px solid var(--rule); }
 .legend b { display: inline-block; width: 18px; height: 8px; border-radius: 2px; vertical-align: 0; margin-right: 5px; }
 .legend .lw { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
 .legend .lr { background: var(--ink); }
 .legend .lq { background: var(--ink); opacity: 0.45; height: 4px; vertical-align: 2px; }
+.legend .lt { background: var(--ink) repeating-linear-gradient(135deg, var(--surface) 0 3px, transparent 3px 7px); }
 
 .deps { list-style: none; margin: 10px 0 0; padding: 0; font-size: 14px; }
 .deps li { display: grid; grid-template-columns: 4.4em 1fr auto; gap: 8px; padding: 6px 0; border-top: 1px dashed var(--rule); align-items: baseline; }
 .deps li.hd { border-top: 0; padding: 0; font-size: 12px; color: var(--muted); }
 .deps .t { font: 600 16px/1 var(--num); }
+.deps .t.hurry { color: var(--hurry); }
 .deps .note { color: var(--muted); }
 .deps .cx { text-decoration: line-through; color: var(--muted); }
 .tag { font: 600 11px/1 var(--font); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; }
@@ -160,7 +179,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
     </div>
   </div>
 
-  <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading timetable</span></div>
+  <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading timetable</span><span class="temp" id="temp"></span></div>
   <section class="hero" id="hero" aria-live="polite"></section>
   <div id="alerts"></div>
   <section class="board" id="board" aria-label="Your options"></section>
@@ -168,6 +187,7 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
   <footer>
     <p id="feed-note"></p>
     <p>Data provided under license granted by City of Madison, WI, Metro Transit.</p>
+    <p>Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a>.</p>
   </footer>
 </main>
 
@@ -196,6 +216,11 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 const DEFAULT_RELAY = "https://commute-relay.pkir.workers.dev"; // your Cloudflare Worker
 const POLL_SECONDS = 30;  // Metro refreshes its feed about every 30 seconds
 const HORIZON_MIN = 90;   // how far ahead to look
+// Close calls: when another option arrives within this many minutes of the fastest one,
+// prefer fewer bus changes above freezing and less walking at or below freezing.
+const CLOSE_CALL_MIN = 5;
+const FREEZING_F = 32;
+const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=43.0747&longitude=-89.3841&current=temperature_2m&temperature_unit=fahrenheit";
 
 const PLACES = { home: "Home", daycare: "Daycare", campus: "Campus", downtown: "Downtown" };
 const ARRIVE = { home: "home", daycare: "at daycare", campus: "on campus", downtown: "downtown" };
@@ -423,10 +448,15 @@ function journeys(opt, days, now, s) {
   const connecting = second && second.filter(x => x.status !== "canceled");
   const res = [];
   for (const j of first) {
+    if (j.dep < now - 30) continue; // the bus has left your stop
     const leaveBy = j.dep - walkTo - buf;
-    if (leaveBy < now - 30) continue;
     if (leaveBy > now + HORIZON_MIN * 60) break;
-    const out = { opt, leaveBy, legs: [j], arrive: j.arr + walkFrom, canceled: j.status === "canceled", missingTransfer: false };
+    // "tight": you can't reach the stop at your usual pace with your usual buffer.
+    // "short": how many minutes faster than your usual walk you'd need to be.
+    const tight = leaveBy < now - 30;
+    const short = Math.max(0, Math.ceil((walkTo - (j.dep - now)) / 60));
+    const out = { opt, leaveBy, legs: [j], arrive: j.arr + walkFrom, canceled: j.status === "canceled", missingTransfer: false,
+      tight, short, walk: (walkTo + walkFrom) / 60 };
     if (connecting && !out.canceled) {
       const next = connecting.find(x => x.dep >= j.arr + s.xfer * 60);
       if (next) { out.legs.push(next); out.arrive = next.arr + walkFrom; }
@@ -435,6 +465,33 @@ function journeys(opt, days, now, s) {
     res.push(out);
   }
   return res;
+}
+
+// ---------- Weather (Open-Meteo, no key needed) ----------
+let weather = store.get("weather", null); // { tempF, at }
+const currentTemp = () => (weather && Date.now() - weather.at < 2 * 3600 * 1000 ? weather.tempF : null);
+async function loadWeather() {
+  if (document.hidden || (weather && Date.now() - weather.at < 10 * 60 * 1000)) return;
+  try {
+    const r = await fetch(WEATHER_URL);
+    if (!r.ok) return;
+    const t = (await r.json())?.current?.temperature_2m;
+    if (Number.isFinite(t)) { weather = { tempF: t, at: Date.now() }; store.set("weather", weather); render(); }
+  } catch {}
+}
+
+// Pick the best option. Normally the earliest arrival wins; among options arriving within
+// CLOSE_CALL_MIN of the earliest, the temperature decides what matters more.
+const soonestFirst = (a, b) => a.arrive - b.arrive || b.leaveBy - a.leaveBy;
+function pickBest(cands, tempF) {
+  if (!cands.length) return { best: null, fastest: null, rule: null };
+  const fastest = cands.slice().sort(soonestFirst)[0];
+  const close = cands.filter(c => c.arrive <= fastest.arrive + CLOSE_CALL_MIN * 60);
+  const changes = c => c.legs.length - 1;
+  let rule = null, by = soonestFirst;
+  if (tempF != null && tempF > FREEZING_F) { rule = "fewer bus changes"; by = (a, b) => changes(a) - changes(b) || soonestFirst(a, b); }
+  else if (tempF != null) { rule = "less walking"; by = (a, b) => a.walk - b.walk || soonestFirst(a, b); }
+  return { best: close.sort(by)[0], fastest, rule };
 }
 
 // ---------- Rendering ----------
@@ -460,18 +517,45 @@ function render() {
   const rows = opts.map(opt => ({ opt, list: journeys(opt, days, now, s) }));
   const stale = rows.some(r => r.list === null);
   rows.forEach(r => { r.list ||= []; });
-  const catchable = rows.map(r => r.list.find(j => !j.canceled && !j.missingTransfer)).filter(Boolean);
-  const best = catchable.slice().sort((a, b) => a.arrive - b.arrive || b.leaveBy - a.leaveBy)[0];
+  const usable = j => !j.canceled && !j.missingTransfer;
+  rows.forEach(r => {
+    r.ok = r.list.find(j => usable(j) && !j.tight);                 // next bus you can walk to
+    r.hurry = r.list.filter(j => usable(j) && j.tight).pop() || null; // latest bus you'd have to hurry for
+  });
+  const tempF = currentTemp();
+  const { best, fastest, rule } = pickBest(rows.map(r => r.ok).filter(Boolean), tempF);
+
+  // A bus you'd have to hurry for, worth mentioning if it gets you there sooner than the best pick.
+  const hurryPick = rows.map(r => r.hurry).filter(h => h && (!best || h.arrive < best.arrive - 60))
+    .sort((a, b) => a.short - b.short || a.arrive - b.arrive)[0];
+  const hurryText = h => h.short > 0 ? `You'd need to walk about ${h.short} min faster than usual.` : "Go now and skip your usual buffer.";
+  const busLine = (j, lead) => {
+    const [a, b] = j.legs;
+    const via = b ? `, then the ${badge(b.route, true)} at ${esc(STOP[b.from])} at ${clock(b.dep)}` : "";
+    return `<p>${lead} ${esc(j.opt.stop)} in ${mins(a.dep - now)} min${via}. You'll be ${ARRIVE[to]} around ${clock(j.arrive)}.</p>`;
+  };
+  const bigTime = a => `<h1><span class="badge lg ${a.route}" aria-hidden="true"><span>${a.route}</span></span><span><span class="sr">Route ${a.route} bus at </span>${clock(a.dep)}</span></h1>`;
 
   // Hero
   if (best) {
     const lead = best.leaveBy - now;
-    const head = lead < 45 ? "Leave now" : `Leave in ${mins(lead)} min`;
-    const [a, b] = best.legs;
-    const via = b ? `, then ${badge(b.route, true)} at ${esc(STOP[b.from])}` : "";
-    $("#hero").innerHTML = `<h1>${head}</h1>
-      <p>${badge(a.route)} from ${esc(best.opt.stop)} at ${clock(a.dep)}${via}. You'll be ${ARRIVE[to]} around ${clock(best.arrive)}.</p>
-      <p class="muted">${a.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}</p>`;
+    const a = best.legs[0];
+    let why = "";
+    if (rule && fastest && best !== fastest) {
+      const later = mins(best.arrive - fastest.arrive);
+      why = ` It's ${Math.round(tempF)}°F, so this pick has ${rule} than the ${esc(fastest.opt.name)}` +
+        (later > 0 ? `, which arrives ${later} min sooner.` : ", which arrives at the same time.");
+    }
+    $("#hero").innerHTML = `<p class="lead">${lead < 45 ? "Leave now" : `Leave in ${mins(lead)} min`}</p>
+      ${bigTime(a)}
+      ${busLine(best, "Bus leaves")}
+      <p class="muted">${a.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}${why}</p>
+      ${hurryPick ? `<p class="note"><b>Or hurry:</b> ${badge(hurryPick.legs[0].route, true)} from ${esc(hurryPick.opt.stop)} at ${clock(hurryPick.legs[0].dep)}, in ${mins(hurryPick.legs[0].dep - now)} min. ${hurryText(hurryPick)} You'd be ${ARRIVE[to]} around ${clock(hurryPick.arrive)}.</p>` : ""}`;
+  } else if (hurryPick) {
+    $("#hero").innerHTML = `<p class="lead hurry">Hurry</p>
+      ${bigTime(hurryPick.legs[0])}
+      ${busLine(hurryPick, "Bus leaves")}
+      <p class="muted">${hurryText(hurryPick)} Nothing else leaves in the next ${HORIZON_MIN} minutes.</p>`;
   } else if (stale) {
     $("#hero").innerHTML = `<h1>Timetable needs updating</h1><p>Run the "Update bus schedule" action on GitHub so this page knows the stops for this trip.</p>`;
   } else {
@@ -479,31 +563,37 @@ function render() {
   }
 
   // Timeline scale
-  const ends = rows.map(r => r.list.find(j => !j.canceled && isFinite(j.arrive))?.arrive).filter(Boolean);
+  const ends = rows.map(r => (r.ok || r.hurry)?.arrive).filter(Boolean);
   const spanMin = Math.min(120, Math.max(40, Math.ceil(((Math.max(now + 1800, ...ends) - now) / 60 + 5) / 10) * 10));
   const pct = sec => Math.max(0, Math.min(100, ((sec - now) / (spanMin * 60)) * 100));
   const ticks = []; for (let m = 0; m <= spanMin; m += spanMin > 60 ? 20 : 10) ticks.push(m);
   const axis = `<div class="axis" aria-hidden="true">${ticks.map((m, i) => `<span style="left:${(m / spanMin) * 100}%">${i === 0 ? "now" : clock(now + m * 60)}</span>`).join("")}</div>`;
 
-  const optHtml = rows.map(({ opt, list }) => {
-    const next = list.find(j => !j.canceled && !j.missingTransfer);
-    const isBest = best && next === best;
+  const seg = (cls, s0, s1) => s1 > s0 ? `<i class="${cls}" style="left:${pct(s0)}%;width:${Math.max(0.6, pct(s1) - pct(s0))}%"></i>` : "";
+  const track = j => {
+    const [a, b] = j.legs;
+    const start = j.tight
+      ? seg("walk", now, a.dep) // hurrying: walk straight to the bus, no buffer
+      : seg("walk", j.leaveBy, a.dep - s.buffer * 60) + seg("wait " + a.route, a.dep - s.buffer * 60, a.dep);
+    return `<div class="bar${j.tight ? " tight" : ""}" aria-hidden="true">${start}${seg(a.route, a.dep, a.arr)}${b ? seg("wait " + b.route, a.arr, b.dep) + seg(b.route, b.dep, b.arr) : ""}${seg("walk", (b || a).arr, j.arrive)}</div>`;
+  };
+  const anyHurry = rows.some(r => r.hurry);
+
+  const optHtml = rows.map(({ opt, list, ok, hurry }) => {
+    const isBest = best && ok === best;
     const open = expanded.has(opt.id);
-    let bar = "", when = `<span class="opt-when">None<small>next ${HORIZON_MIN} min</small></span>`;
-    if (next) {
-      const [a, b] = next.legs;
-      const seg = (cls, s0, s1) => s1 > s0 ? `<i class="${cls}" style="left:${pct(s0)}%;width:${Math.max(0.6, pct(s1) - pct(s0))}%"></i>` : "";
-      bar = `<div class="bar" aria-hidden="true">
-        ${seg("walk", next.leaveBy, a.dep - s.buffer * 60)}
-        ${seg("wait " + a.route, a.dep - s.buffer * 60, a.dep)}
-        ${seg(a.route, a.dep, a.arr)}
-        ${b ? seg("wait " + b.route, a.arr, b.dep) + seg(b.route, b.dep, b.arr) : ""}
-        ${seg("walk", (b || a).arr, next.arrive)}
-      </div>`;
-      const lead = next.leaveBy - now;
-      when = `<span class="opt-when">${lead < 45 ? "Now" : mins(lead) + " min"}<small>arrive ${clock(next.arrive)}</small></span>`;
+    const primary = ok || hurry;
+    let when = `<span class="opt-when">None<small>next ${HORIZON_MIN} min</small></span>`;
+    if (primary) {
+      const busIn = mins(primary.legs[0].dep - now);
+      when = `<span class="opt-when${ok ? "" : " hurry"}">${busIn < 1 ? "Now" : busIn + " min"}<small>bus ${clock(primary.legs[0].dep)}</small></span>`;
     }
-    const deps = list.slice(0, 4).map(j => {
+    const plan = ok
+      ? `<span class="opt-plan">${ok.leaveBy - now < 45 ? "Leave now" : `Leave by ${clock(ok.leaveBy)}`}, arrive ${clock(ok.arrive)}</span>` : "";
+    const hurryLine = hurry
+      ? `<span class="opt-hurry">Hurry: bus at ${clock(hurry.legs[0].dep)}${hurry.short > 0 ? `, walk ${hurry.short} min faster` : ", skip the buffer"}, arrive ${clock(hurry.arrive)}</span>` : "";
+    const bars = (hurry ? track(hurry) : "") + (ok ? track(ok) : "");
+    const deps = list.slice(0, 5).map(j => {
       const a = j.legs[0];
       const tag = a.status === "canceled" ? `<span class="tag late">Canceled</span>`
         : a.status === "live" ? `<span class="tag ${a.delay > 120 ? "late" : "live"}">${a.delay > 90 ? mins(a.delay) + " min late" : a.delay < -90 ? mins(-a.delay) + " min early" : "Live, on time"}</span>`
@@ -511,20 +601,21 @@ function render() {
       const second = opt.legs[1];
       const note = j.canceled ? `<span class="cx">Bus at ${clock(a.sDep)}</span>`
         : j.missingTransfer ? `Bus ${clock(a.dep)}, no ${second.route} connection found`
-        : `Bus ${clock(a.dep)}${j.legs[1] ? `, ${j.legs[1].route} ${clock(j.legs[1].dep)}` : ""}, arrive ${clock(j.arrive)}`;
-      return `<li><span class="t">${j.canceled ? "–" : clock(j.leaveBy)}</span><span class="note">${note}</span>${tag}</li>`;
+        : `Bus ${clock(a.dep)} (${mins(a.dep - now)} min)${j.legs[1] ? `, ${j.legs[1].route} ${clock(j.legs[1].dep)}` : ""}, arrive ${clock(j.arrive)}`;
+      const left = j.canceled ? "–" : j.tight ? "Hurry" : clock(j.leaveBy);
+      return `<li><span class="t${j.tight && !j.canceled ? " hurry" : ""}">${left}</span><span class="note">${note}</span>${tag}</li>`;
     }).join("");
     return `<div class="opt${isBest ? " best" : ""}">
       <button class="opt-head" type="button" aria-expanded="${open}" data-opt="${esc(opt.id)}">
-        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span><span class="opt-sub">${esc(opt.sub)}, ${walkMin(opt.from, opt.legs[0].from)} min walk to the stop</span></span>
+        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span>${plan}<span class="opt-sub">${esc(opt.sub)}, ${walkMin(opt.from, opt.legs[0].from)} min walk to the stop</span>${hurryLine}</span>
         ${when}
       </button>
-      ${bar}
+      ${bars}
       ${open ? (deps ? `<ul class="deps"><li class="hd"><span>Leave by</span><span></span><span></span></li>${deps}</ul>` : `<p class="empty">No buses in the next ${HORIZON_MIN} minutes.</p>`) : ""}
     </div>`;
   }).join("");
 
-  $("#board").innerHTML = axis + optHtml + `<div class="legend" aria-hidden="true"><span><b class="lw"></b>Walk</span><span><b class="lq"></b>Wait at stop</span><span><b class="lr"></b>On the bus</span><span>Tap an option for more times</span></div>`;
+  $("#board").innerHTML = axis + optHtml + `<div class="legend" aria-hidden="true"><span><b class="lw"></b>Walk</span><span><b class="lq"></b>Wait at stop</span><span><b class="lr"></b>On the bus</span>${anyHurry ? `<span><b class="lt"></b>Only if you hurry</span>` : ""}<span>Tap an option for more times</span></div>`;
 
   // Alerts for the routes and stops on this trip
   const ourStops = new Set(opts.flatMap(o => o.legs.flatMap(l => [l.from, l.to])));
@@ -544,6 +635,8 @@ function render() {
 
 function renderStatus() {
   const el = $("#status"), txt = $("#status-text"), s = settings();
+  const tf = currentTemp();
+  $("#temp").textContent = tf == null ? "" : `${Math.round(tf)}°F`;
   el.classList.remove("live", "off");
   if (!SCHED) { txt.textContent = schedError ? "Couldn't load the timetable. Check that schedule.json is in the repo." : "Loading timetable"; return; }
   if (!s.relay) { el.classList.add("off"); txt.textContent = "Timetable only. Add your live data link in Settings."; return; }
@@ -619,12 +712,13 @@ let hiddenAt = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   if (hiddenAt && Date.now() - hiddenAt > 20 * 60 * 1000) [from, to] = initialTrip();
-  render(); loadLive();
+  render(); loadLive(); loadWeather();
 });
 setInterval(render, 15000);
 setInterval(loadLive, POLL_SECONDS * 1000);
+setInterval(loadWeather, 10 * 60 * 1000);
 
-(async () => { render(); await loadSchedule(); render(); loadLive(); })();
+(async () => { render(); await loadSchedule(); render(); loadLive(); loadWeather(); })();
 </script>
 </body>
 </html>

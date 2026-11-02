@@ -93,8 +93,12 @@ To change a stop, edit the `ROUTES` list in `index.html` and the matching list i
 
 - Both directions work at any time of day, including late-night buses that run past midnight.
 - Metro's live feed refreshes about every 30 seconds. The page checks every 30 seconds while it's open and pauses when the phone is locked.
+- Every bus is listed until it leaves your stop, even ones you can't reach at your usual walking pace. Those are marked **Hurry**, drawn with striped bars, and say how much faster than usual you'd need to walk.
+- The top of the page shows the bus departure time in large type, with "Leave in N min" above it. In each option, the number on the right is minutes until the bus leaves; the leave-by time is on the left.
+- **Temperature tie-break:** when options arrive within 5 minutes of the fastest one, the page prefers fewer bus changes if it's above 32°F and less walking if it's 32°F or colder. Temperature comes from Open-Meteo (free, no key) and refreshes every 10 minutes. Change `CLOSE_CALL_MIN` or `FREEZING_F` near the top of `index.html` to adjust.
 - Each timetable trip is matched to its live prediction by trip ID. If a bus has a live prediction, its time is "Live". If not, the page uses the timetable and says so. Canceled trips are shown crossed out.
 - The "Best" option is the one that gets you there earliest. If two tie (for example, the A-to-B transfer catches the same B you'd get by walking to Park & Dayton), it picks the one that lets you leave later.
 - Metro's schedule changes a few times a year. The current one runs through December 5, 2026. The weekly Action picks up new schedules automatically, and the page footer warns you if the timetable has expired.
 
 Data provided under license granted by City of Madison, WI, Metro Transit.
+Weather data by Open-Meteo.com (CC BY 4.0).
