@@ -17,7 +17,7 @@
 <style>
 :root {
   --bg: #E8EEF1; --surface: #F7FAFB; --ink: #16263A; --muted: #56677A; --rule: #C6D2DA;
-  --walk: #8394A4; --idle: #C6D2DA; --focus: #1E6FD9; --warn-bg: #FFF3D6; --warn-ink: #5C4300; --hurry: #B54708;
+  --walk: #8394A4; --idle: #C6D2DA; --focus: #1E6FD9; --warn-bg: #FFF3D6; --warn-ink: #5C4300; --hurry: #B54708; --good: #23804A; --bad: #B83227;
   --A: #EE3325; --B: #80BC00; --D: #333366; --A-ink: #fff; --B-ink: #10220A; --D-ink: #fff;
   --font: "Barlow", system-ui, sans-serif; --num: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
   color-scheme: light dark;
@@ -25,7 +25,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0E1924; --surface: #152433; --ink: #E4ECF2; --muted: #98A8B6; --rule: #2B3D4F;
-    --walk: #7A8C9C; --idle: #2B3D4F; --focus: #7FB2FF; --warn-bg: #3A2F12; --warn-ink: #F5DFA6; --hurry: #F5B05A;
+    --walk: #7A8C9C; --idle: #2B3D4F; --focus: #7FB2FF; --warn-bg: #3A2F12; --warn-ink: #F5DFA6; --hurry: #F5B05A; --good: #5CC98A; --bad: #FF8A7A;
     --D: #6A6ABF;
   }
 }
@@ -40,28 +40,36 @@ main { max-width: 560px; margin: 0 auto; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 
-/* Place pickers */
-.pickers { padding: 12px 0 14px; display: grid; gap: 10px; }
-.pick-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-.pick-label { color: var(--muted); font-size: 14px; }
-.seg { display: flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 3px; }
-.seg button {
-  flex: 1; border: 0; background: none; padding: 7px 4px; border-radius: 999px;
-  font-weight: 500; font-size: 15px; cursor: pointer; white-space: nowrap;
+/* Trip: one line, From / swap / To / settings */
+.trip { display: flex; align-items: center; gap: 6px; padding: 10px 0 6px; }
+.chip {
+  position: relative; flex: 1 1 0; min-width: 0; min-height: 52px; padding: 6px 28px 6px 12px;
+  border: 1px solid var(--rule); border-radius: 12px; background: var(--surface);
+  display: flex; flex-direction: column; justify-content: center;
 }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 600; }
+.chip small { font-size: 12px; line-height: 1.15; color: var(--muted); }
+.chip-val { font: 600 18px/1.2 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.chip .chev { position: absolute; right: 10px; top: 50%; width: 14px; height: 14px; margin-top: -7px; color: var(--muted); pointer-events: none; }
+.chip:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
 .icon-btn {
-  border: 1px solid var(--rule); background: var(--surface); width: 34px; height: 34px;
+  flex: none; border: 1px solid var(--rule); background: var(--surface); width: 44px; height: 44px;
   border-radius: 50%; display: grid; place-items: center; cursor: pointer;
 }
+.icon-btn.plain { border-color: transparent; background: none; }
 
 /* Status */
-.status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.status {
+  flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 6px; border: 0; background: none;
+  padding: 0; text-align: left; font-size: 13px; color: var(--muted); cursor: pointer;
+}
+.status .refresh { width: 14px; height: 14px; flex: none; opacity: 0.7; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--walk); flex: none; }
-.status.live .dot { background: #2E9E5B; }
+.status.live .dot { background: var(--good); }
 .status.off .dot { background: #C98A00; }
-.statusbar { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
-.statusbar .status { flex: 1; margin-bottom: 0; padding-top: 3px; }
+.statusbar { display: flex; align-items: center; gap: 8px; }
+.wx-hit { min-height: 44px; min-width: 44px; border: 0; background: none; padding: 0; display: flex; align-items: center; justify-content: flex-end; cursor: pointer; }
+.banner { margin: 2px 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-ink); font-size: 14px; }
 .wx {
   flex: none; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 3px 0;
   font: 600 15px/1 var(--num); color: var(--ink);
@@ -92,13 +100,20 @@ button { font: inherit; color: inherit; }
 a { color: inherit; }
 
 /* Hero */
-.hero { padding: 6px 0 18px; }
+.hero { padding: 2px 0 16px; }
 .hero .lead { font: 600 24px/1.15 var(--num); margin: 0 0 2px; }
 .hero .lead.hurry { color: var(--hurry); }
 .hero h1 {
   font: 600 clamp(60px, 18vw, 88px)/0.95 var(--num); letter-spacing: -0.01em; margin: 0 0 10px;
   display: flex; align-items: center; gap: 12px;
 }
+.hero h1.msg { display: block; font-size: 40px; line-height: 1.05; }
+.htag {
+  font: 600 13px/1 var(--font); letter-spacing: 0; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; align-self: center;
+}
+.htag.live { color: var(--good); border-color: var(--good); }
+.htag.late { color: var(--bad); border-color: var(--bad); }
 .hero .note { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-ink); font-size: 15px; max-width: none; }
 .hero p { margin: 0; font-size: 18px; line-height: 1.35; max-width: 34ch; }
 .hero .muted { color: var(--muted); font-size: 15px; margin-top: 4px; }
@@ -131,21 +146,28 @@ a { color: inherit; }
   background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
 }
 .opt-name { font-weight: 600; font-size: 16px; }
-.opt-sub { color: var(--muted); font-size: 13px; display: block; font-weight: 400; }
-.opt-plan { display: block; font-size: 14px; margin-top: 1px; }
-.opt-hurry { display: block; font-size: 13px; color: var(--hurry); font-weight: 500; }
-.opt-when.hurry { color: var(--hurry); }
-.opt-when { font: 600 20px/1.1 var(--num); text-align: right; white-space: nowrap; }
+.opt-plan { display: block; font-size: 14px; margin-top: 2px; }
+.opt-plan.hurry { color: var(--hurry); }
+.opt-when { font: 600 22px/1.1 var(--num); text-align: right; white-space: nowrap; align-self: center; }
 .opt-when small { display: block; font: 500 12px/1.2 var(--font); color: var(--muted); }
-.opt.best .opt-name::after { content: "Best"; font: 600 11px/1 var(--font); background: var(--ink); color: var(--bg); padding: 3px 6px; border-radius: 4px; margin-left: 8px; vertical-align: 2px; }
+.opt-when.hurry b, .opt-when.hurry small { color: var(--hurry); }
+.opt-when b { font-weight: 600; }
+.ldot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; background: var(--good); }
+.ldot.late { background: var(--bad); }
+.opt-plan.cx { color: var(--bad); font-size: 13px; }
+.legend .lo { color: var(--hurry); font-weight: 600; }
+.opt-when .best {
+  display: block; width: max-content; margin: 0 0 3px auto; font: 600 11px/1 var(--font); font-style: normal;
+  background: var(--ink); color: var(--bg); padding: 3px 6px; border-radius: 4px;
+}
+.opt-more { margin-top: 8px; }
+.opt-sub { color: var(--muted); font-size: 13px; margin: 0; }
 .bar { position: relative; height: 14px; margin: 10px 0 2px; border-radius: 4px; background: repeating-linear-gradient(90deg, var(--idle) 0 2px, transparent 2px 8px) center / 100% 2px no-repeat; }
 .bar i { position: absolute; top: 0; height: 100%; border-radius: 3px; }
 .bar i.walk { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
 .bar i.wait { height: 6px; top: 4px; opacity: 0.45; }
 .bar i.A { background-color: var(--A); } .bar i.B { background-color: var(--B); } .bar i.D { background-color: var(--D); }
-.bar.tight { height: 10px; margin-top: 8px; }
 .bar.tight i.A, .bar.tight i.B, .bar.tight i.D { background-image: repeating-linear-gradient(135deg, var(--surface) 0 3px, transparent 3px 7px); }
-.bar.tight + .bar { margin-top: 5px; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 10px 0 8px; border-top: 1px solid var(--rule); }
 .legend b { display: inline-block; width: 18px; height: 8px; border-radius: 2px; vertical-align: 0; margin-right: 5px; }
 .legend .lw { background: repeating-linear-gradient(135deg, var(--walk) 0 3px, transparent 3px 6px); border: 1px solid var(--walk); }
@@ -161,8 +183,8 @@ a { color: inherit; }
 .deps .note { color: var(--muted); }
 .deps .cx { text-decoration: line-through; color: var(--muted); }
 .tag { font: 600 11px/1 var(--font); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; }
-.tag.live { border-color: #2E9E5B; color: #2E9E5B; }
-.tag.late { border-color: #C0392B; color: #C0392B; }
+.tag.live { border-color: var(--good); color: var(--good); }
+.tag.late { border-color: var(--bad); color: var(--bad); }
 .empty { color: var(--muted); font-size: 14px; padding: 4px 0 0; }
 
 footer { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.5; }
@@ -185,33 +207,43 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
 .sheet-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 18px 16px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--rule); }
 .btn { border: 1px solid var(--rule); background: var(--bg); padding: 9px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
 .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn { min-height: 44px; }
+.btn.link { border: 0; background: none; padding: 10px 0; color: var(--focus); font-weight: 500; }
+.adv { margin-top: 10px; border-top: 1px solid var(--rule); }
+.adv summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 15px; font-weight: 600; }
+.adv .field { border-top: 0; padding-top: 0; }
+.adv p { margin: 4px 0 10px; }
 @media (prefers-reduced-motion: no-preference) { .bar i { transition: left .4s ease, width .4s ease; } }
 </style>
 </head>
 <body>
 <main>
-  <div class="pickers">
-    <div>
-      <div class="pick-head">
-        <span class="pick-label" id="from-label">Starting from</span>
-        <button class="icon-btn" type="button" id="open-settings" aria-label="Settings">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-        </button>
-      </div>
-      <div class="seg" role="group" aria-labelledby="from-label" id="from-seg"></div>
+  <header class="trip">
+    <div class="chip">
+      <small aria-hidden="true">From</small><span class="chip-val" id="from-val" aria-hidden="true"></span>
+      <select id="from-sel" aria-label="Starting from"></select>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </div>
-    <div>
-      <div class="pick-head"><span class="pick-label" id="to-label">Going to</span></div>
-      <div class="seg" role="group" aria-labelledby="to-label" id="to-seg"></div>
+    <button class="icon-btn plain" type="button" id="swap" aria-label="Swap direction">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg>
+    </button>
+    <div class="chip">
+      <small aria-hidden="true">To</small><span class="chip-val" id="to-val" aria-hidden="true"></span>
+      <select id="to-sel" aria-label="Going to"></select>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </div>
-  </div>
+    <button class="icon-btn" type="button" id="open-settings" aria-label="Settings">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
 
   <div class="statusbar">
-    <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading timetable</span></div>
+    <button class="status" type="button" id="status" aria-label="Refresh live data"><span class="dot"></span><span id="status-text">Loading timetable</span><svg class="refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
     <span id="wx"></span>
   </div>
   <ul class="wx-notes" id="wx-notes" hidden></ul>
-  <section class="hero" id="hero" aria-live="polite"></section>
+  <div id="banner"></div>
+  <section class="hero" id="hero"></section>
   <div id="alerts"></div>
   <section class="board" id="board" aria-label="Your options"></section>
 
@@ -228,15 +260,20 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
       <h2 id="settings-title">Settings</h2>
       <p>Saved on this phone only.</p>
       <div class="field"><label for="work">My work place</label><select id="work"><option value="campus">Campus</option><option value="downtown">Downtown</option></select></div>
-      <div class="field wide"><label for="relay">Live data link (your Cloudflare relay)</label><input id="relay" type="url" inputmode="url" placeholder="https://commute-relay.yourname.workers.dev" autocomplete="off"></div>
       <div class="field"><label for="buffer">Minutes to be at the stop before the bus</label><input id="buffer" type="number" min="0" max="15" step="1"></div>
       <div class="field"><label for="xfer">Minutes needed to change buses</label><input id="xfer" type="number" min="0" max="15" step="1"></div>
       <h3>Walking minutes</h3>
       <p>Between each place and its stops, in either direction.</p>
       <div id="walk-fields"></div>
+      <button class="btn link" type="button" id="reset-settings">Use default times</button>
+      <details class="adv">
+        <summary>Advanced</summary>
+        <div class="field wide"><label for="relay">Live data link (Cloudflare relay)</label><input id="relay" type="url" inputmode="url" autocomplete="off"></div>
+        <p>Only change this if the relay moves. Leave it blank to use the built-in link.</p>
+      </details>
     </div>
     <div class="sheet-actions">
-      <button class="btn" type="button" id="reset-settings">Reset</button>
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
       <button class="btn primary" value="save">Save</button>
     </div>
   </form>
@@ -510,9 +547,18 @@ function journeys(opt, days, now, s) {
 // ---------- Weather (Open-Meteo, no key needed) ----------
 let weather = store.get("weather2", null); // { tempF, at, cur, hourly, air }
 const currentTemp = () => (weather && Date.now() - weather.at < 2 * 3600 * 1000 ? weather.tempF : null);
-const getJson = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); };
-async function loadWeather() {
-  if (document.hidden || (weather && Date.now() - weather.at < 10 * 60 * 1000)) return;
+// Every request gives up after a while, so a weak signal at the stop can't freeze updates.
+async function fetchWithin(url, read, opts = {}, ms = 10000) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(url, { ...opts, signal: ctl.signal });
+    if (!r.ok) throw new Error(`${r.status} from ${url}`);
+    return await read(r);
+  } finally { clearTimeout(timer); }
+}
+const getJson = url => fetchWithin(url, r => r.json());
+async function loadWeather(force = false) {
+  if (document.hidden || (!force && weather && Date.now() - weather.at < 10 * 60 * 1000)) return;
   const [fc, aq] = await Promise.allSettled([getJson(WEATHER_URL), getJson(AIR_URL)]);
   let w = null;
   if (fc.status === "fulfilled" && Number.isFinite(fc.value?.current?.temperature_2m)) {
@@ -612,121 +658,158 @@ const clock = sec => new Date(sec * 1000).toLocaleTimeString([], { hour: "numeri
 const mins = sec => Math.max(0, Math.round(sec / 60));
 const badge = (r, sm) => `<span class="badge ${r}${sm ? " sm" : ""}" aria-label="Route ${r}">${r}</span>`;
 
-function renderPickers() {
-  const btns = (keys, cur, attr) => keys.map(k => `<button type="button" ${attr}="${k}" aria-pressed="${k === cur}">${PLACES[k]}</button>`).join("");
-  $("#from-seg").innerHTML = btns(Object.keys(PLACES), from, "data-from");
-  $("#to-seg").innerHTML = btns(GOES_TO[from], to, "data-to");
+// Only touch the page when something actually changed.
+const setHTML = (el, html) => { if (el._html !== html) { el.innerHTML = html; el._html = html; } };
+
+function syncPickers() {
+  const opts = keys => keys.map(k => `<option value="${k}">${PLACES[k]}</option>`).join("");
+  const fs = $("#from-sel"), ts = $("#to-sel");
+  setHTML(fs, opts(Object.keys(PLACES)));
+  setHTML(ts, opts(GOES_TO[from]));
+  fs.value = from; ts.value = to;
+  $("#from-val").textContent = PLACES[from];
+  $("#to-val").textContent = PLACES[to];
 }
 
-function render() {
-  renderPickers();
+// Rebuilding the page while a finger is down can swallow the tap, so timed refreshes wait a moment.
+let lastTouch = 0, renderTimer = 0;
+document.addEventListener("pointerdown", () => { lastTouch = Date.now(); }, true);
+
+function render(userAction = false) {
+  if (userAction !== true && Date.now() - lastTouch < 800) {
+    clearTimeout(renderTimer); renderTimer = setTimeout(render, 800); return;
+  }
+  syncPickers();
   renderStatus();
   if (!SCHED) return;
 
-  const t = today(), now = Date.now() / 1000, s = settings(), days = serviceDays();
+  const now = Date.now() / 1000, s = settings(), days = serviceDays();
   const opts = optionsFor(from, to);
   const rows = opts.map(opt => ({ opt, list: journeys(opt, days, now, s) }));
   const stale = rows.some(r => r.list === null);
   rows.forEach(r => { r.list ||= []; });
   const usable = j => !j.canceled && !j.missingTransfer;
   rows.forEach(r => {
-    r.ok = r.list.find(j => usable(j) && !j.tight);                 // next bus you can walk to
-    r.hurry = r.list.filter(j => usable(j) && j.tight).pop() || null; // latest bus you'd have to hurry for
+    r.next = r.list.find(usable) || null;              // next bus at the stop, even one you'd have to hurry for
+    r.ok = r.list.find(j => usable(j) && !j.tight);     // next bus you can walk to at your usual pace
+    r.hurry = r.list.filter(j => usable(j) && j.tight).pop() || null;
   });
   const tempF = currentTemp();
   const { best, fastest, rule } = pickBest(rows.map(r => r.ok).filter(Boolean), tempF);
 
-  // A bus you'd have to hurry for, worth mentioning if it gets you there sooner than the best pick.
+  // Timetable end date: warn a week ahead, and say so plainly once it has run out.
+  const end = SCHED.feedEnd;
+  const endDate = end ? new Date(+end.slice(0, 4), +end.slice(4, 6) - 1, +end.slice(6)) : null;
+  const d0 = new Date(); const todayDate = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate());
+  const daysLeft = endDate ? Math.round((endDate - todayDate) / 86400000) : null;
+  const endTxt = endDate ? endDate.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "unknown";
+  const expired = daysLeft != null && daysLeft < 0;
+  setHTML($("#banner"), expired
+    ? `<p class="banner">The bus timetable ended ${esc(endTxt)}. Times may be missing or wrong until the "Update bus schedule" action on GitHub loads Metro's new one.</p>`
+    : daysLeft != null && daysLeft <= 7
+      ? `<p class="banner">The bus timetable runs out ${daysLeft === 0 ? "today" : `on ${esc(endTxt)}`}. If it hasn't updated by then, run the "Update bus schedule" action on GitHub.</p>`
+      : "");
+  $("#feed-note").textContent = expired
+    ? `The timetable expired on ${endTxt}. Run the "Update bus schedule" action on GitHub to load the new one.`
+    : `Timetable valid through ${endTxt}.`;
+
+  // Hero: the bus to leave for, with its live status beside the big time.
   const hurryPick = rows.map(r => r.hurry).filter(h => h && (!best || h.arrive < best.arrive - 60))
     .sort((a, b) => a.short - b.short || a.arrive - b.arrive)[0];
   const hurryText = h => h.short > 0 ? `You'd need to walk about ${h.short} min faster than usual.` : "Go now and skip your usual buffer.";
-  const busLine = (j, lead) => {
+  const busLine = j => {
     const [a, b] = j.legs;
     const via = b ? `, then the ${badge(b.route, true)} at ${esc(STOP[b.from])} at ${clock(b.dep)}` : "";
-    return `<p>${lead} ${esc(j.opt.stop)} in ${mins(a.dep - now)} min${via}. You'll be ${ARRIVE[to]} around ${clock(j.arrive)}.</p>`;
+    return `<p>Bus leaves ${esc(j.opt.stop)} in ${mins(a.dep - now)} min${via}. You'll be ${ARRIVE[to]} around ${clock(j.arrive)}.</p>`;
   };
-  const bigTime = a => `<h1><span class="badge lg ${a.route}" aria-hidden="true"><span>${a.route}</span></span><span><span class="sr">Route ${a.route} bus at </span>${clock(a.dep)}</span></h1>`;
+  const statusTag = a => a.status === "canceled" ? `<span class="htag late">Canceled</span>`
+    : a.status === "live" ? (a.delay > 90 ? `<span class="htag late">${mins(a.delay)} min late</span>`
+      : a.delay < -90 ? `<span class="htag live">${mins(-a.delay)} min early</span>` : `<span class="htag live">Live</span>`)
+    : a.status === "estimated" ? `<span class="htag">Estimated</span>` : `<span class="htag">Scheduled</span>`;
+  const bigTime = a => `<h1><span class="badge lg ${a.route}" aria-hidden="true"><span>${a.route}</span></span><span><span class="sr">Route ${a.route} bus at </span>${clock(a.dep)}</span>${statusTag(a)}</h1>`;
 
-  // Hero
+  let hero;
   if (best) {
     const lead = best.leaveBy - now;
-    const a = best.legs[0];
     let why = "";
     if (rule && fastest && best !== fastest) {
       const later = mins(best.arrive - fastest.arrive);
-      why = ` It's ${Math.round(tempF)}°F, so this pick has ${rule} than the ${esc(fastest.opt.name)}` +
-        (later > 0 ? `, which arrives ${later} min sooner.` : ", which arrives at the same time.");
+      why = `<p class="muted">It's ${Math.round(tempF)}°F, so this pick has ${rule} than the ${esc(fastest.opt.name)}` +
+        (later > 0 ? `, which arrives ${later} min sooner.</p>` : ", which arrives at the same time.</p>");
     }
-    $("#hero").innerHTML = `<p class="lead">${lead < 45 ? "Leave now" : `Leave in ${mins(lead)} min`}</p>
-      ${bigTime(a)}
-      ${busLine(best, "Bus leaves")}
-      <p class="muted">${a.status === "live" ? "Based on the bus's live position." : "Based on the timetable; no live position for this bus yet."}${why}</p>
-      ${hurryPick ? `<p class="note"><b>Or hurry:</b> ${badge(hurryPick.legs[0].route, true)} from ${esc(hurryPick.opt.stop)} at ${clock(hurryPick.legs[0].dep)}, in ${mins(hurryPick.legs[0].dep - now)} min. ${hurryText(hurryPick)} You'd be ${ARRIVE[to]} around ${clock(hurryPick.arrive)}.</p>` : ""}`;
+    hero = `<p class="lead">${lead < 45 ? "Leave now" : `Leave in ${mins(lead)} min`}</p>${bigTime(best.legs[0])}${busLine(best)}${why}` +
+      (hurryPick ? `<p class="note"><b>Or hurry:</b> ${badge(hurryPick.legs[0].route, true)} from ${esc(hurryPick.opt.stop)} at ${clock(hurryPick.legs[0].dep)}, in ${mins(hurryPick.legs[0].dep - now)} min. ${hurryText(hurryPick)} You'd be ${ARRIVE[to]} around ${clock(hurryPick.arrive)}.</p>` : "");
   } else if (hurryPick) {
-    $("#hero").innerHTML = `<p class="lead hurry">Hurry</p>
-      ${bigTime(hurryPick.legs[0])}
-      ${busLine(hurryPick, "Bus leaves")}
-      <p class="muted">${hurryText(hurryPick)} Nothing else leaves in the next ${HORIZON_MIN} minutes.</p>`;
+    hero = `<p class="lead hurry">Hurry</p>${bigTime(hurryPick.legs[0])}${busLine(hurryPick)}<p class="muted">${hurryText(hurryPick)} Nothing else leaves in the next ${HORIZON_MIN} minutes.</p>`;
+  } else if (expired) {
+    hero = `<h1 class="msg">Timetable expired</h1><p>The page can't show bus times until the "Update bus schedule" action on GitHub loads Metro's new timetable.</p>`;
   } else if (stale) {
-    $("#hero").innerHTML = `<h1>Timetable needs updating</h1><p>Run the "Update bus schedule" action on GitHub so this page knows the stops for this trip.</p>`;
+    hero = `<h1 class="msg">Timetable needs updating</h1><p>Run the "Update bus schedule" action on GitHub so this page knows the stops for this trip.</p>`;
   } else {
-    $("#hero").innerHTML = `<h1>No bus soon</h1><p>None of your options leave in the next ${HORIZON_MIN} minutes.</p>`;
+    hero = `<h1 class="msg">No bus soon</h1><p>None of your options leave in the next ${HORIZON_MIN} minutes.</p>`;
   }
+  setHTML($("#hero"), hero);
 
   // Timeline scale
-  const ends = rows.map(r => (r.ok || r.hurry)?.arrive).filter(Boolean);
+  const ends = rows.map(r => (r.ok || r.next)?.arrive).filter(x => Number.isFinite(x));
   const spanMin = Math.min(120, Math.max(40, Math.ceil(((Math.max(now + 1800, ...ends) - now) / 60 + 5) / 10) * 10));
-  const pct = sec => Math.max(0, Math.min(100, ((sec - now) / (spanMin * 60)) * 100));
+  // Round "now" to the minute so the bars only move once a minute.
+  const t0 = Math.floor(now / 60) * 60;
+  const pct = sec => Math.max(0, Math.min(100, ((sec - t0) / (spanMin * 60)) * 100));
   const ticks = []; for (let m = 0; m <= spanMin; m += spanMin > 60 ? 20 : 10) ticks.push(m);
-  const axis = `<div class="axis" aria-hidden="true">${ticks.map((m, i) => `<span style="left:${(m / spanMin) * 100}%">${i === 0 ? "now" : clock(now + m * 60)}</span>`).join("")}</div>`;
-
-  const seg = (cls, s0, s1) => s1 > s0 ? `<i class="${cls}" style="left:${pct(s0)}%;width:${Math.max(0.6, pct(s1) - pct(s0))}%"></i>` : "";
+  const axis = `<div class="axis" aria-hidden="true">${ticks.map((m, i) => `<span style="left:${(m / spanMin) * 100}%">${i === 0 ? "now" : clock(t0 + m * 60)}</span>`).join("")}</div>`;
+  const seg = (cls, s0, s1) => s1 > s0 ? `<i class="${cls}" style="left:${pct(s0).toFixed(1)}%;width:${Math.max(0.6, pct(s1) - pct(s0)).toFixed(1)}%"></i>` : "";
   const track = j => {
     const [a, b] = j.legs;
     const start = j.tight
-      ? seg("walk", now, a.dep) // hurrying: walk straight to the bus, no buffer
+      ? seg("walk", t0, a.dep) // hurrying: walk straight to the bus, no buffer
       : seg("walk", j.leaveBy, a.dep - s.buffer * 60) + seg("wait " + a.route, a.dep - s.buffer * 60, a.dep);
     return `<div class="bar${j.tight ? " tight" : ""}" aria-hidden="true">${start}${seg(a.route, a.dep, a.arr)}${b ? seg("wait " + b.route, a.arr, b.dep) + seg(b.route, b.dep, b.arr) : ""}${seg("walk", (b || a).arr, j.arrive)}</div>`;
   };
-  const anyHurry = rows.some(r => r.hurry);
+  const stripedRow = rows.some(r => !r.ok && r.next);
 
-  const optHtml = rows.map(({ opt, list, ok, hurry }) => {
+  const optHtml = rows.map(({ opt, list, ok, next }) => {
     const isBest = best && ok === best;
     const open = expanded.has(opt.id);
-    const primary = ok || hurry;
-    let when = `<span class="opt-when">None<small>next ${HORIZON_MIN} min</small></span>`;
-    if (primary) {
-      const busIn = mins(primary.legs[0].dep - now);
-      when = `<span class="opt-when${ok ? "" : " hurry"}">${busIn < 1 ? "Now" : busIn + " min"}<small>bus ${clock(primary.legs[0].dep)}</small></span>`;
-    }
-    const plan = ok
-      ? `<span class="opt-plan">${ok.leaveBy - now < 45 ? "Leave now" : `Leave by ${clock(ok.leaveBy)}`}, arrive ${clock(ok.arrive)}</span>` : "";
-    const hurryLine = hurry
-      ? `<span class="opt-hurry">Hurry: bus at ${clock(hurry.legs[0].dep)}${hurry.short > 0 ? `, walk ${hurry.short} min faster` : ", skip the buffer"}, arrive ${clock(hurry.arrive)}</span>` : "";
-    const bars = (hurry ? track(hurry) : "") + (ok ? track(ok) : "");
+    // Right side: the next bus at this stop, so it's useful when you're already standing there.
+    let when = `<span class="opt-when"><b>None</b><small>next ${HORIZON_MIN} min</small></span>`;
+    if (next) {
+      const busIn = mins(next.legs[0].dep - now);
+      const a = next.legs[0];
+      const dot = a.status === "live" ? `<i class="ldot${a.delay > 90 ? " late" : ""}" title="${a.delay > 90 ? mins(a.delay) + " min late" : "Live"}"></i>` : "";
+      when = `<span class="opt-when${next.tight ? " hurry" : ""}">${isBest ? `<em class="best">Best</em>` : ""}<b>${busIn < 1 ? "Now" : busIn + " min"}</b><small>${dot}bus ${clock(a.dep)}</small></span>`;
+    } else if (isBest) when = `<span class="opt-when"><em class="best">Best</em></span>`;
+    // Left side: when to leave for the bus you can walk to.
+    let plan = "";
+    if (ok) plan = `<span class="opt-plan">${ok.leaveBy - now < 45 ? "Leave now" : `Leave by ${clock(ok.leaveBy)}`}${next !== ok ? ` for the ${clock(ok.legs[0].dep)}` : ""}, arrive ${clock(ok.arrive)}</span>`;
+    else if (next) plan = `<span class="opt-plan hurry">Only if you hurry: ${next.short > 0 ? `walk ${next.short} min faster` : "go now"}, arrive ${clock(next.arrive)}</span>`;
+    // A canceled bus before the next one is worth saying out loud, especially at the stop.
+    const gone = list.filter(j => j.canceled && (!next || j.legs[0].sDep < next.legs[0].dep)).map(j => clock(j.legs[0].sDep));
+    if (gone.length) plan += `<span class="opt-plan cx">${gone.join(", ")} canceled</span>`;
+    const bar = ok ? track(ok) : next ? track(next) : "";
     const deps = list.slice(0, 5).map(j => {
       const a = j.legs[0];
       const tag = a.status === "canceled" ? `<span class="tag late">Canceled</span>`
-        : a.status === "live" ? `<span class="tag ${a.delay > 120 ? "late" : "live"}">${a.delay > 90 ? mins(a.delay) + " min late" : a.delay < -90 ? mins(-a.delay) + " min early" : "Live, on time"}</span>`
-        : a.status === "estimated" ? `<span class="tag">Estimated</span>` : `<span class="tag">Timetable</span>`;
-      const second = opt.legs[1];
+        : a.status === "live" ? `<span class="tag ${a.delay > 90 ? "late" : "live"}">${a.delay > 90 ? mins(a.delay) + " min late" : a.delay < -90 ? mins(-a.delay) + " min early" : "Live, on time"}</span>`
+        : a.status === "estimated" ? `<span class="tag">Estimated</span>` : `<span class="tag">Scheduled</span>`;
       const note = j.canceled ? `<span class="cx">Bus at ${clock(a.sDep)}</span>`
-        : j.missingTransfer ? `Bus ${clock(a.dep)}, no ${second.route} connection found`
+        : j.missingTransfer ? `Bus ${clock(a.dep)}, no ${opt.legs[1].route} connection found`
         : `Bus ${clock(a.dep)} (${mins(a.dep - now)} min)${j.legs[1] ? `, ${j.legs[1].route} ${clock(j.legs[1].dep)}` : ""}, arrive ${clock(j.arrive)}`;
       const left = j.canceled ? "–" : j.tight ? "Hurry" : clock(j.leaveBy);
       return `<li><span class="t${j.tight && !j.canceled ? " hurry" : ""}">${left}</span><span class="note">${note}</span>${tag}</li>`;
     }).join("");
-    return `<div class="opt${isBest ? " best" : ""}">
+    const more = open ? `<div class="opt-more"><p class="opt-sub">${esc(opt.sub)}. ${walkMin(opt.from, opt.legs[0].from)} min walk to the stop.</p>` +
+      (deps ? `<ul class="deps"><li class="hd"><span>Leave by</span><span></span><span></span></li>${deps}</ul>` : `<p class="empty">No buses in the next ${HORIZON_MIN} minutes.</p>`) + `</div>` : "";
+    return `<div class="opt">
       <button class="opt-head" type="button" aria-expanded="${open}" data-opt="${esc(opt.id)}">
-        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span>${plan}<span class="opt-sub">${esc(opt.sub)}, ${walkMin(opt.from, opt.legs[0].from)} min walk to the stop</span>${hurryLine}</span>
+        <span><span class="opt-name">${badge(opt.route, true)} ${esc(opt.name)}</span>${plan}</span>
         ${when}
       </button>
-      ${bars}
-      ${open ? (deps ? `<ul class="deps"><li class="hd"><span>Leave by</span><span></span><span></span></li>${deps}</ul>` : `<p class="empty">No buses in the next ${HORIZON_MIN} minutes.</p>`) : ""}
+      ${bar}${more}
     </div>`;
   }).join("");
 
-  $("#board").innerHTML = axis + optHtml + `<div class="legend" aria-hidden="true"><span><b class="lw"></b>Walk</span><span><b class="lq"></b>Wait at stop</span><span><b class="lr"></b>On the bus</span>${anyHurry ? `<span><b class="lt"></b>Only if you hurry</span>` : ""}<span>Tap an option for more times</span></div>`;
+  setHTML($("#board"), axis + optHtml + `<div class="legend" aria-hidden="true"><span><b class="lw"></b>Walk</span><span><b class="lq"></b>Wait at stop</span><span><b class="lr"></b>On the bus</span>${stripedRow ? `<span><b class="lt"></b>Only if you hurry</span>` : ""}${rows.some(r => r.next && r.next.tight) ? `<span><span class="lo">Orange</span>: only if you're at the stop or hurry</span>` : ""}<span>Tap a route for more times</span></div>`);
 
   // Alerts for the routes and stops on this trip
   const ourStops = new Set(opts.flatMap(o => o.legs.flatMap(l => [l.from, l.to])));
@@ -734,52 +817,48 @@ function render() {
   const alerts = (live?.alerts || []).filter(a =>
     (a.routes.some(r => routes.has(r)) || a.stops.some(x => ourStops.has(x))) &&
     (!a.periods.length || a.periods.some(([st, en]) => (!st || st <= now) && (!en || en >= now))));
-  $("#alerts").innerHTML = alerts.map(a => `<details class="alert"><summary>${esc(a.header || "Service alert")}</summary>${a.description ? `<p>${esc(a.description)}</p>` : ""}</details>`).join("");
-
-  // Footer: schedule validity
-  const end = SCHED.feedEnd;
-  const endTxt = end ? `${end.slice(4, 6)}/${end.slice(6)}/${end.slice(0, 4)}` : "unknown";
-  $("#feed-note").textContent = t.ymd > end
-    ? `The timetable expired on ${endTxt}. Run the "Update bus schedule" action on GitHub to load the new one.`
-    : `Timetable valid through ${endTxt}.`;
+  setHTML($("#alerts"), alerts.map(a => `<details class="alert"><summary>${esc(a.header || "Service alert")}</summary>${a.description ? `<p>${esc(a.description)}</p>` : ""}</details>`).join(""));
 }
 
 function renderWeather() {
   const tf = currentTemp(), box = $("#wx"), notes = $("#wx-notes");
-  if (tf == null) { box.innerHTML = ""; notes.hidden = true; return; }
+  if (tf == null) { setHTML(box, ""); notes.hidden = true; return; }
   const flags = weatherFlags(Date.now() / 1000);
   const temp = `${Math.round(tf)}°F`;
-  if (!flags.length) { wxOpen = false; box.innerHTML = `<span class="wx">${temp}</span>`; notes.hidden = true; return; }
+  if (!flags.length) { wxOpen = false; setHTML(box, `<span class="wx">${temp}</span>`); notes.hidden = true; return; }
   const kinds = [...new Set(flags.map(f => f.kind))];
-  box.innerHTML = `<button type="button" class="wx flag ${kinds[0]}" id="wx-btn" aria-expanded="${wxOpen}" aria-controls="wx-notes"
-    aria-label="${temp}. Weather notes: ${esc(flags.map(f => f.kind).join(", "))}">${kinds.slice(0, 3).map(wxIcon).join("")}${temp}</button>`;
-  notes.innerHTML = flags.map(f => `<li>${wxIcon(f.kind)}<span>${esc(f.text)}</span></li>`).join("");
+  setHTML(box, `<button type="button" class="wx-hit" id="wx-btn" aria-expanded="${wxOpen}" aria-controls="wx-notes"
+    aria-label="${temp}. Weather notes: ${esc(kinds.join(", "))}"><span class="wx flag ${kinds[0]}">${kinds.slice(0, 3).map(wxIcon).join("")}${temp}</span></button>`);
+  setHTML(notes, flags.map(f => `<li>${wxIcon(f.kind)}<span>${esc(f.text)}</span></li>`).join(""));
   notes.hidden = !wxOpen;
 }
 
+let refreshing = false;
 function renderStatus() {
-  const el = $("#status"), txt = $("#status-text"), s = settings();
   renderWeather();
+  const el = $("#status"), txt = $("#status-text"), s = settings();
   el.classList.remove("live", "off");
-  if (!SCHED) { txt.textContent = schedError ? "Couldn't load the timetable. Check that schedule.json is in the repo." : "Loading timetable"; return; }
-  if (!s.relay) { el.classList.add("off"); txt.textContent = "Timetable only. Add your live data link in Settings."; return; }
-  if (live && Date.now() - lastFetchOk < 3 * 60 * 1000) {
+  let msg;
+  if (refreshing) msg = "Refreshing…";
+  else if (!SCHED) msg = schedError ? "Couldn't load the timetable" : "Loading timetable";
+  else if (!s.relay) { el.classList.add("off"); msg = "Timetable only, no live data link"; }
+  else if (live && Date.now() - lastFetchOk < 3 * 60 * 1000) {
     const age = Math.max(0, Math.round(Date.now() / 1000 - live.timestamp));
-    el.classList.add("live");
-    txt.textContent = age < 60 ? "Live, Metro updated under a minute ago" : `Live, Metro updated ${Math.round(age / 60)} min ago`;
-  } else if (liveError) {
-    el.classList.add("off"); txt.textContent = "Can't reach live data right now. Showing the timetable.";
-  } else txt.textContent = "Getting live data";
+    if (age < 180) { el.classList.add("live"); msg = age < 60 ? "Live, updated just now" : `Live, updated ${Math.round(age / 60)} min ago`; }
+    else { el.classList.add("off"); msg = `Live data is ${Math.round(age / 60)} min old`; }
+  } else if (liveError) { el.classList.add("off"); msg = "No live data, showing timetable"; }
+  else msg = "Getting live data";
+  txt.textContent = msg;
 }
 
 // ---------- Data loading ----------
+let schedAt = 0;
 async function loadSchedule() {
   try {
-    if (window.SCHEDULE_DATA) { SCHED = window.SCHEDULE_DATA; return; }
-    const r = await fetch("schedule.json", { cache: "no-cache" });
-    if (!r.ok) throw new Error(r.status);
-    SCHED = await r.json();
-  } catch (e) { schedError = e; }
+    if (window.SCHEDULE_DATA) SCHED = window.SCHEDULE_DATA;
+    else SCHED = await fetchWithin("schedule.json", r => r.json(), { cache: "no-cache" }, 30000);
+    schedAt = Date.now(); schedError = null;
+  } catch (e) { if (!SCHED) schedError = e; }
 }
 let inflight = false;
 async function loadLive() {
@@ -787,10 +866,11 @@ async function loadLive() {
   if (!relay || inflight || document.hidden) return;
   inflight = true;
   try {
-    const [tr, al] = await Promise.all(["trips", "alerts"].map(p => fetch(`${relay}/${p}`, { cache: "no-store" })));
-    if (!tr.ok) throw new Error("trips " + tr.status);
-    const t = GTFSRT.decode(await tr.arrayBuffer());
-    const a = al.ok ? GTFSRT.decode(await al.arrayBuffer()) : { alerts: [] };
+    const get = p => fetchWithin(`${relay}/${p}`, r => r.arrayBuffer(), { cache: "no-store" });
+    const [tr, al] = await Promise.allSettled([get("trips"), get("alerts")]);
+    if (tr.status !== "fulfilled") throw tr.reason;
+    const t = GTFSRT.decode(tr.value);
+    const a = al.status === "fulfilled" ? GTFSRT.decode(al.value) : { alerts: [] };
     const byTrip = new Map();
     for (const u of t.tripUpdates) if (u.trip && OUR_ROUTES.has(u.trip.routeId)) byTrip.set(u.trip.tripId, u);
     live = { timestamp: t.timestamp, byTrip, alerts: a.alerts };
@@ -798,17 +878,23 @@ async function loadLive() {
   } catch (e) { liveError = e; }
   finally { inflight = false; render(); }
 }
+async function refreshNow() {
+  if (refreshing) return;
+  refreshing = true; render(true);
+  await Promise.allSettled([loadLive(), loadWeather(true)]);
+  refreshing = false; render(true);
+}
 
 // ---------- Events ----------
 document.addEventListener("click", e => {
   if (e.target.closest("#wx-btn")) { wxOpen = !wxOpen; renderWeather(); return; }
-  const f = e.target.closest("[data-from]");
-  if (f) { chooseFrom(f.dataset.from); render(); return; }
-  const t = e.target.closest("[data-to]");
-  if (t) { chooseTo(t.dataset.to); render(); return; }
+  if (e.target.closest("#status")) { refreshNow(); return; }
+  if (e.target.closest("#swap")) { [from, to] = [to, from]; render(true); return; }
   const o = e.target.closest("[data-opt]");
-  if (o) { const id = o.dataset.opt; expanded.has(id) ? expanded.delete(id) : expanded.add(id); render(); }
+  if (o) { const id = o.dataset.opt; expanded.has(id) ? expanded.delete(id) : expanded.add(id); render(true); }
 });
+$("#from-sel").addEventListener("change", e => { chooseFrom(e.target.value); render(true); });
+$("#to-sel").addEventListener("change", e => { chooseTo(e.target.value); render(true); });
 
 const dlg = $("#settings");
 function fillSettings() {
@@ -820,29 +906,36 @@ function fillSettings() {
   ).join("");
 }
 $("#open-settings").addEventListener("click", () => { fillSettings(); dlg.showModal(); });
-$("#reset-settings").addEventListener("click", () => { store.del("settings"); fillSettings(); });
+// Fills in the default times on screen only; nothing changes until Save. Work place and relay stay as they are.
+$("#reset-settings").addEventListener("click", () => {
+  $("#buffer").value = 1; $("#xfer").value = 1;
+  document.querySelectorAll("[data-walk]").forEach(i => { i.value = WALKS.find(w => walkKey(w) === i.dataset.walk).min; });
+});
 dlg.addEventListener("close", () => {
   if (dlg.returnValue !== "save") return;
   const num = (v, d) => (v === "" || !Number.isFinite(Number(v)) ? d : Number(v));
   const walks = {};
   document.querySelectorAll("[data-walk]").forEach(i => { if (i.value !== "") walks[i.dataset.walk] = Number(i.value); });
-  store.set("settings", { relay: $("#relay").value.trim(), buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walks, work: $("#work").value });
+  const relay = $("#relay").value.trim().replace(/\/+$/, "");
+  store.set("settings", { relay: relay && relay !== DEFAULT_RELAY ? relay : undefined, buffer: num($("#buffer").value, 1), xfer: num($("#xfer").value, 1), walks, work: $("#work").value });
   [from, to] = initialTrip();
-  live = null; liveError = null; render(); loadLive();
+  live = null; liveError = null; render(true); loadLive();
 });
 
-// Phones often resume a home-screen page instead of reloading it, so reset the trip after a long break.
+// Phones often resume a home-screen page instead of reloading it: after a long break, reset the trip,
+// and reload the timetable if it's more than 12 hours old.
 let hiddenAt = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   if (hiddenAt && Date.now() - hiddenAt > 20 * 60 * 1000) [from, to] = initialTrip();
-  render(); loadLive(); loadWeather();
+  render(true); loadLive(); loadWeather();
+  if (schedAt && Date.now() - schedAt > 12 * 3600 * 1000) loadSchedule().then(() => render(true));
 });
 setInterval(render, 15000);
 setInterval(loadLive, POLL_SECONDS * 1000);
 setInterval(loadWeather, 10 * 60 * 1000);
 
-(async () => { render(); await loadSchedule(); render(); loadLive(); loadWeather(); })();
+(async () => { render(true); await loadSchedule(); render(true); loadLive(); loadWeather(); })();
 </script>
 </body>
 </html>

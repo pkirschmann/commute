@@ -78,6 +78,7 @@ Open the GitHub Pages address on your phone. On iPhone: **Share → Add to Home 
 
 - **Walking times:** tap the gear icon. Walking minutes are listed by place and stop, and each number is used in both directions. The defaults are estimates from the stop locations, so time yourself once and update them. Settings are saved per phone, so each person can set their own.
 - **My work place:** in Settings, choose Campus or Downtown for this phone. Before noon the page opens on Home → your work place; after noon, your work place → Home. Tapping Home or Daycare under "Starting from" fills in your work place as the destination, and either picker can be changed with one tap.
+- **Settings safety:** Cancel discards your edits. "Use default times" fills in the original walking, buffer, and transfer times on screen, and nothing changes until you tap Save. It leaves the work place and the live data link alone. The live data link is under Advanced.
 - **Buffer:** minutes you want to be at the stop before the bus (default 1). Raise it in winter.
 - **Transfer time:** minimum minutes to change from the A to the B at Fourth Street (default 1). Both stop at the same eastbound platform.
 
@@ -93,6 +94,9 @@ To change a stop, edit the `ROUTES` list in `index.html` and the matching list i
 
 - Both directions work at any time of day, including late-night buses that run past midnight.
 - Metro's live feed refreshes about every 30 seconds. The page checks every 30 seconds while it's open and pauses when the phone is locked.
+- **Reading a route row:** the left side says when to leave for the next bus you can walk to at your usual pace ("Leave by 4:25p for the 4:35p"). The big number on the right counts down to the next bus at that stop, even one you couldn't walk to in time, so it's useful when you're already standing there. It turns orange when you'd have to hurry, and a small dot shows live (green) or late (red). Canceled buses are noted in the row.
+- **Refresh:** tap the status line ("Live, updated just now") to refresh live data and weather right away.
+- **Timetable warnings:** the footer shows when the timetable ends. A week before that, a banner appears at the top, and if it runs out, the page says so instead of "No bus soon".
 - Every bus is listed until it leaves your stop, even ones you can't reach at your usual walking pace. Those are marked **Hurry**, drawn with striped bars, and say how much faster than usual you'd need to walk.
 - The top of the page shows the bus departure time in large type, with "Leave in N min" above it. In each option, the number on the right is minutes until the bus leaves; the leave-by time is on the left.
 - **Temperature tie-break:** when options arrive within 5 minutes of the fastest one, the page prefers fewer bus changes if it's above 32°F and less walking if it's 32°F or colder. Temperature comes from Open-Meteo (free, no key) and refreshes every 10 minutes. Change `CLOSE_CALL_MIN` or `FREEZING_F` near the top of `index.html` to adjust.
