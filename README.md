@@ -96,6 +96,20 @@ To change a stop, edit the `ROUTES` list in `index.html` and the matching list i
 - Every bus is listed until it leaves your stop, even ones you can't reach at your usual walking pace. Those are marked **Hurry**, drawn with striped bars, and say how much faster than usual you'd need to walk.
 - The top of the page shows the bus departure time in large type, with "Leave in N min" above it. In each option, the number on the right is minutes until the bus leaves; the leave-by time is on the left.
 - **Temperature tie-break:** when options arrive within 5 minutes of the fastest one, the page prefers fewer bus changes if it's above 32°F and less walking if it's 32°F or colder. Temperature comes from Open-Meteo (free, no key) and refreshes every 10 minutes. Change `CLOSE_CALL_MIN` or `FREEZING_F` near the top of `index.html` to adjust.
+- **Weather flags:** the temperature in the top-right corner turns into a colored pill when something in the next 8 hours is worth preparing for. Tap the pill for a one-line note on each flag.
+
+  | Pill | When |
+  |---|---|
+  | Purple, lightning | Thunderstorms, over 40% chance |
+  | Pale teal, drop | Freezing rain or drizzle, over 40% chance |
+  | Light blue, snowflake | Snow, over 40% chance, or snowing now |
+  | Blue, rain cloud | Rain, over 40% chance, or raining now (suggests a raincoat over an umbrella if gusts reach 25 mph) |
+  | Green, haze | US air quality index above 100 |
+  | Pale blue, thermometer | Feels like 10°F or colder |
+  | Peach, sun | Feels like 90°F or hotter |
+  | Gray, wind | Gusts of 35 mph or more |
+
+  The pill takes the color of the most serious flag and shows up to three icons. Thresholds are in the `WX` line near the top of `index.html`. If Open-Meteo ever rejects the detailed forecast request, the page falls back to showing only the temperature.
 - Each timetable trip is matched to its live prediction by trip ID. If a bus has a live prediction, its time is "Live". If not, the page uses the timetable and says so. Canceled trips are shown crossed out.
 - The "Best" option is the one that gets you there earliest. If two tie (for example, the A-to-B transfer catches the same B you'd get by walking to Park & Dayton), it picks the one that lets you leave later.
 - Metro's schedule changes a few times a year. The current one runs through December 5, 2026. The weekly Action picks up new schedules automatically, and the page footer warns you if the timetable has expired.

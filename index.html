@@ -60,7 +60,34 @@ button { font: inherit; color: inherit; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--walk); flex: none; }
 .status.live .dot { background: #2E9E5B; }
 .status.off .dot { background: #C98A00; }
-.status .temp { margin-left: auto; font: 600 14px/1 var(--num); color: var(--ink); }
+.statusbar { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.statusbar .status { flex: 1; margin-bottom: 0; padding-top: 3px; }
+.wx {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 3px 0;
+  font: 600 15px/1 var(--num); color: var(--ink);
+}
+.wx.flag { padding: 4px 9px 4px 7px; border-radius: 999px; cursor: pointer; background: var(--wx-bg); color: var(--wx-ink); }
+.wx svg { width: 15px; height: 15px; flex: none; }
+.wx.storm { --wx-bg: #5B3FA8; --wx-ink: #fff; }
+.wx.ice   { --wx-bg: #BDE6EC; --wx-ink: #0B3A40; }
+.wx.snow  { --wx-bg: #CFE6FF; --wx-ink: #0F3557; }
+.wx.rain  { --wx-bg: #2F6FD0; --wx-ink: #fff; }
+.wx.air   { --wx-bg: #4F7F2A; --wx-ink: #fff; }
+.wx.cold  { --wx-bg: #DCE4F7; --wx-ink: #1E2E5C; }
+.wx.heat  { --wx-bg: #F8D9B4; --wx-ink: #6B3500; }
+.wx.wind  { --wx-bg: #DDE3E8; --wx-ink: #2B3A47; }
+@media (prefers-color-scheme: dark) {
+  .wx.ice  { --wx-bg: #9FD3DB; }
+  .wx.snow { --wx-bg: #B3D7FB; }
+  .wx.rain { --wx-bg: #3F80E4; }
+  .wx.air  { --wx-bg: #5C9134; }
+  .wx.cold { --wx-bg: #C2CFEE; }
+  .wx.heat { --wx-bg: #F2C48E; }
+  .wx.wind { --wx-bg: #C9D2DA; }
+}
+.wx-notes { list-style: none; margin: 4px 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--rule); font-size: 14px; }
+.wx-notes li { display: flex; gap: 8px; align-items: flex-start; padding: 2px 0; }
+.wx-notes svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--muted); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 a { color: inherit; }
 
@@ -179,7 +206,11 @@ dialog::backdrop { background: rgba(10, 20, 30, 0.45); }
     </div>
   </div>
 
-  <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading timetable</span><span class="temp" id="temp"></span></div>
+  <div class="statusbar">
+    <div class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading timetable</span></div>
+    <span id="wx"></span>
+  </div>
+  <ul class="wx-notes" id="wx-notes" hidden></ul>
   <section class="hero" id="hero" aria-live="polite"></section>
   <div id="alerts"></div>
   <section class="board" id="board" aria-label="Your options"></section>
@@ -220,7 +251,16 @@ const HORIZON_MIN = 90;   // how far ahead to look
 // prefer fewer bus changes above freezing and less walking at or below freezing.
 const CLOSE_CALL_MIN = 5;
 const FREEZING_F = 32;
-const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=43.0747&longitude=-89.3841&current=temperature_2m&temperature_unit=fahrenheit";
+// Weather comes from Open-Meteo (free, no key). Coordinates are the Capitol Square.
+const WX_PLACE = "latitude=43.0747&longitude=-89.3841";
+const WEATHER_URL = `https://api.open-meteo.com/v1/forecast?${WX_PLACE}&current=temperature_2m,precipitation,weather_code` +
+  "&hourly=precipitation_probability,precipitation,snowfall,weather_code,apparent_temperature,wind_gusts_10m" +
+  "&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timeformat=unixtime&forecast_days=2";
+const WEATHER_URL_BASIC = `https://api.open-meteo.com/v1/forecast?${WX_PLACE}&current=temperature_2m&temperature_unit=fahrenheit`;
+const AIR_URL = `https://air-quality-api.open-meteo.com/v1/air-quality?${WX_PLACE}&hourly=us_aqi&timeformat=unixtime&forecast_days=2`;
+// Weather flags look this far ahead, and use these thresholds.
+const WX_HOURS = 8;
+const WX = { chance: 40, aqi: 100, gustMph: 35, coldFeelsF: 10, hotFeelsF: 90 };
 
 const PLACES = { home: "Home", daycare: "Daycare", campus: "Campus", downtown: "Downtown" };
 const ARRIVE = { home: "home", daycare: "at daycare", campus: "on campus", downtown: "downtown" };
@@ -468,17 +508,88 @@ function journeys(opt, days, now, s) {
 }
 
 // ---------- Weather (Open-Meteo, no key needed) ----------
-let weather = store.get("weather", null); // { tempF, at }
+let weather = store.get("weather2", null); // { tempF, at, cur, hourly, air }
 const currentTemp = () => (weather && Date.now() - weather.at < 2 * 3600 * 1000 ? weather.tempF : null);
+const getJson = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); };
 async function loadWeather() {
   if (document.hidden || (weather && Date.now() - weather.at < 10 * 60 * 1000)) return;
-  try {
-    const r = await fetch(WEATHER_URL);
-    if (!r.ok) return;
-    const t = (await r.json())?.current?.temperature_2m;
-    if (Number.isFinite(t)) { weather = { tempF: t, at: Date.now() }; store.set("weather", weather); render(); }
-  } catch {}
+  const [fc, aq] = await Promise.allSettled([getJson(WEATHER_URL), getJson(AIR_URL)]);
+  let w = null;
+  if (fc.status === "fulfilled" && Number.isFinite(fc.value?.current?.temperature_2m)) {
+    const c = fc.value.current, h = fc.value.hourly || {};
+    w = { tempF: c.temperature_2m, cur: { precip: c.precipitation, code: c.weather_code },
+      hourly: { time: h.time, chance: h.precipitation_probability, precip: h.precipitation, snow: h.snowfall,
+        code: h.weather_code, feels: h.apparent_temperature, gust: h.wind_gusts_10m } };
+  } else {
+    // The detailed request was refused: fall back to temperature only, so the cold-weather tie-break still works.
+    try { const b = await getJson(WEATHER_URL_BASIC); if (Number.isFinite(b?.current?.temperature_2m)) w = { tempF: b.current.temperature_2m }; } catch {}
+  }
+  if (!w) return;
+  if (aq.status === "fulfilled" && aq.value?.hourly?.time) w.air = { time: aq.value.hourly.time, aqi: aq.value.hourly.us_aqi };
+  weather = { ...w, at: Date.now() };
+  store.set("weather2", weather);
+  render();
 }
+
+// WMO weather codes used by Open-Meteo.
+const SNOW_CODES = [71, 73, 75, 77, 85, 86], ICE_CODES = [56, 57, 66, 67], STORM_CODES = [95, 96, 99];
+const AQI_LEVEL = v => v > 300 ? "hazardous" : v > 200 ? "very unhealthy" : v > 150 ? "unhealthy" : "unhealthy for sensitive groups";
+
+// Things worth knowing before heading out in the next WX_HOURS hours, most important first.
+function weatherFlags(nowSec) {
+  if (!weather || Date.now() - weather.at > 2 * 3600 * 1000) return [];
+  const flags = [], h = weather.hourly, end = nowSec + WX_HOURS * 3600;
+  const hours = [];
+  if (h?.time) h.time.forEach((t, i) => { if (t + 3600 > nowSec && t < end) hours.push({
+    t: Math.max(t, nowSec), chance: h.chance?.[i] ?? 0, precip: h.precip?.[i] ?? 0, snow: h.snow?.[i] ?? 0,
+    code: h.code?.[i], feels: h.feels?.[i], gust: h.gust?.[i] }); });
+  const likely = x => x.chance > WX.chance;
+  const at = x => (x.t <= nowSec + 1800 ? "now" : `around ${clock(x.t).replace(":00", "")}`);
+  const first = test => hours.find(x => likely(x) && test(x));
+  const maxBy = (key, test = () => true) => hours.filter(x => Number.isFinite(x[key]) && test(x)).sort((a, b) => b[key] - a[key])[0];
+  const isSnow = x => SNOW_CODES.includes(x.code) || x.snow > 0;
+  const isIce = x => ICE_CODES.includes(x.code);
+  const gustiest = maxBy("gust");
+  const windy = gustiest && gustiest.gust >= 25;
+
+  const storm = first(x => STORM_CODES.includes(x.code));
+  if (storm) flags.push({ kind: "storm", text: `Thunderstorms possible ${at(storm)} (${storm.chance}%). Bring a raincoat and check the sky before you head out.` });
+  const ice = first(isIce);
+  if (ice) flags.push({ kind: "ice", text: `Freezing rain possible ${at(ice)} (${ice.chance}%). Sidewalks may be icy; wear boots with grip.` });
+  const snowingNow = SNOW_CODES.includes(weather.cur?.code);
+  const snow = first(isSnow);
+  if (snowingNow || snow) flags.push({ kind: "snow", text: snowingNow ? "Snowing now. Wear boots." : `Snow likely ${at(snow)} (${snow.chance}%). Wear boots.` });
+  const rainingNow = weather.cur?.precip > 0 && !snowingNow;
+  const rain = first(x => !isSnow(x) && !isIce(x) && !STORM_CODES.includes(x.code));
+  if (rainingNow || rain) flags.push({ kind: "rain",
+    text: (rainingNow ? "Raining now." : `Rain likely ${at(rain)} (${rain.chance}%).`) +
+      (windy ? " It's windy too, so a raincoat beats an umbrella." : " Bring an umbrella or raincoat.") });
+  if (weather.air?.time) {
+    let worst = null;
+    weather.air.time.forEach((t, i) => { const v = weather.air.aqi?.[i];
+      if (t + 3600 > nowSec && t < end && Number.isFinite(v) && (!worst || v > worst.v)) worst = { t: Math.max(t, nowSec), v }; });
+    if (worst && worst.v > WX.aqi) flags.push({ kind: "air", text: `Air quality may reach ${Math.round(worst.v)} (${AQI_LEVEL(worst.v)}) ${at(worst)}. Limit time outside; consider a mask.` });
+  }
+  const coldest = hours.filter(x => Number.isFinite(x.feels)).sort((a, b) => a.feels - b.feels)[0];
+  if (coldest && coldest.feels <= WX.coldFeelsF) flags.push({ kind: "cold", text: `Feels like ${Math.round(coldest.feels)}°F ${at(coldest)}. Hat, gloves, and a scarf.` });
+  const hottest = maxBy("feels");
+  if (hottest && hottest.feels >= WX.hotFeelsF) flags.push({ kind: "heat", text: `Feels like ${Math.round(hottest.feels)}°F ${at(hottest)}. Bring water.` });
+  if (gustiest && gustiest.gust >= WX.gustMph) flags.push({ kind: "wind", text: `Gusts up to ${Math.round(gustiest.gust)} mph ${at(gustiest)}.` });
+  return flags;
+}
+
+const WX_ICON = {
+  rain: '<path d="M7 14.5a4 4 0 0 1-.3-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 14.5z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
+  snow: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5"/>',
+  air: '<path d="M3 8c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M3 13c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M3 18c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>',
+  storm: '<path d="M7 13.5a4 4 0 0 1-.3-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 13.5"/><path d="M13 11l-3 5h4l-3 5"/>',
+  ice: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9.5 14.5h5"/>',
+  cold: '<path d="M10 13.5V5a2 2 0 1 1 4 0v8.5a4 4 0 1 1-4 0z"/><path d="M12 9v6"/>',
+  heat: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  wind: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3"/>',
+};
+const wxIcon = kind => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WX_ICON[kind]}</svg>`;
+let wxOpen = false;
 
 // Pick the best option. Normally the earliest arrival wins; among options arriving within
 // CLOSE_CALL_MIN of the earliest, the temperature decides what matters more.
@@ -633,10 +744,22 @@ function render() {
     : `Timetable valid through ${endTxt}.`;
 }
 
+function renderWeather() {
+  const tf = currentTemp(), box = $("#wx"), notes = $("#wx-notes");
+  if (tf == null) { box.innerHTML = ""; notes.hidden = true; return; }
+  const flags = weatherFlags(Date.now() / 1000);
+  const temp = `${Math.round(tf)}°F`;
+  if (!flags.length) { wxOpen = false; box.innerHTML = `<span class="wx">${temp}</span>`; notes.hidden = true; return; }
+  const kinds = [...new Set(flags.map(f => f.kind))];
+  box.innerHTML = `<button type="button" class="wx flag ${kinds[0]}" id="wx-btn" aria-expanded="${wxOpen}" aria-controls="wx-notes"
+    aria-label="${temp}. Weather notes: ${esc(flags.map(f => f.kind).join(", "))}">${kinds.slice(0, 3).map(wxIcon).join("")}${temp}</button>`;
+  notes.innerHTML = flags.map(f => `<li>${wxIcon(f.kind)}<span>${esc(f.text)}</span></li>`).join("");
+  notes.hidden = !wxOpen;
+}
+
 function renderStatus() {
   const el = $("#status"), txt = $("#status-text"), s = settings();
-  const tf = currentTemp();
-  $("#temp").textContent = tf == null ? "" : `${Math.round(tf)}°F`;
+  renderWeather();
   el.classList.remove("live", "off");
   if (!SCHED) { txt.textContent = schedError ? "Couldn't load the timetable. Check that schedule.json is in the repo." : "Loading timetable"; return; }
   if (!s.relay) { el.classList.add("off"); txt.textContent = "Timetable only. Add your live data link in Settings."; return; }
@@ -678,6 +801,7 @@ async function loadLive() {
 
 // ---------- Events ----------
 document.addEventListener("click", e => {
+  if (e.target.closest("#wx-btn")) { wxOpen = !wxOpen; renderWeather(); return; }
   const f = e.target.closest("[data-from]");
   if (f) { chooseFrom(f.dataset.from); render(); return; }
   const t = e.target.closest("[data-to]");
